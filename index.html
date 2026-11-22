@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="Mon Coach">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#102a43">
-<title>Mon Coach Half – v1.8.0</title>
+<title>Mon Coach Half – v1.9.0</title>
 <style>
 :root{--navy:#102a43;--blue:#176b87;--cyan:#d9f0f4;--bg:#f3f6f8;--card:#fff;--ink:#172b3a;--muted:#607483;--line:#dce5ea;--green:#247a57;--orange:#b96b16}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.45}
@@ -46,7 +46,7 @@ details.icu{border:1px solid var(--line);border-radius:12px;padding:9px 11px;mar
 </style>
 </head>
 <body>
-<header><div class="top"><h1>Mon Coach Half</h1><span class="version">Version 1.8.0</span></div><p>Préparation Half Ironman · Objectif juillet 2027 · Coach personnel</p></header>
+<header><div class="top"><h1>Mon Coach Half</h1><span class="version">Version 1.9.0</span></div><p>Préparation Half Ironman · Objectif juillet 2027 · Coach personnel</p></header>
 <nav id="tabs">
 <button class="active" data-tab="home">Accueil</button><button data-tab="week">Ma semaine</button><button data-tab="sessions">Séances</button><button data-tab="log">Suivi</button><button data-tab="fitness">Condition physique</button><button data-tab="profile">Profil</button>
 </nav>
@@ -144,21 +144,25 @@ details.icu{border:1px solid var(--line);border-radius:12px;padding:9px 11px;mar
 <div class="card" id="testCard"><h2>Tests et mise à jour des zones</h2>
 <label style="display:flex;align-items:flex-start;gap:7px;font-weight:500"><input type="checkbox" id="testsOn" style="width:auto;min-height:0;margin-top:3px" checked onchange="put('testsOn',this.checked);renderTests()"> Planifier des tests (environ tous les 2 mois, en semaine de récupération)</label>
 <div id="testStatus" style="margin:10px 0"></div>
-<details class="icu"><summary><strong>Vélo · test FTP</strong></summary>
-<label for="ftpMethod">Méthode</label><select id="ftpMethod"><option value="20">Test de 20 min (FTP = 95 % de la puissance moyenne)</option><option value="ramp">Test en rampe (FTP = 75 % de la meilleure minute)</option></select>
-<label for="ftpPower">Puissance (W)</label><input id="ftpPower" type="number" min="50" max="900" placeholder="ex. 200">
+<details class="icu"><summary><strong>Vélo · Critical Power (CP) et FTP</strong></summary>
+<p class="hint" style="margin-top:0">La CP marque la frontière entre les intensités modérée et intense. Elle se calcule avec deux efforts maximaux à puissance constante, 5 min puis 20 min (modèle de Monod &amp; Scherrer), séparés par une récupération complète de 24 à 48 h. La FTP estimée vaut 95 % de la puissance du test de 20 min.</p>
+<label for="ftpMethod">Méthode</label><select id="ftpMethod" onchange="ftpMethodChanged()"><option value="cp" selected>Critical Power : tests de 5 min et 20 min</option><option value="20">Test de 20 min seul (FTP = 95 % de la puissance moyenne)</option><option value="ramp">Test en rampe (FTP = 75 % de la meilleure minute)</option></select>
+<div id="cpRow"><label for="ftpPower5">Puissance moyenne du test de 5 min (W)</label><input id="ftpPower5" type="number" min="50" max="1500" placeholder="ex. 300"></div>
+<label for="ftpPower" id="ftpPowerLbl">Puissance moyenne du test de 20 min (W)</label><input id="ftpPower" type="number" min="50" max="900" placeholder="ex. 250">
 <div class="actions"><button class="secondary" onclick="calcTest('ftp')">Calculer</button></div><div id="ftpRes" class="hint"></div></details>
 <details class="icu"><summary><strong>Natation · test 400 m / 200 m</strong></summary>
 <label for="t400">Temps du 400 m (min:ss)</label><input id="t400" type="text" placeholder="ex. 6:30" autocomplete="off">
 <label for="t200">Temps du 200 m (min:ss)</label><input id="t200" type="text" placeholder="ex. 3:05" autocomplete="off">
 <div class="actions"><button class="secondary" onclick="calcTest('css')">Calculer</button></div><div id="cssRes" class="hint"></div><p class="hint">Les deux efforts à fond, avec 10 min de récupération entre les deux. CSS = (temps du 400 m − temps du 200 m) ÷ 2, par 100 m.</p></details>
-<details class="icu"><summary><strong>Course · test 30 min</strong></summary>
-<label for="runDist">Distance parcourue en 30 min (km)</label><input id="runDist" type="number" step="0.01" min="2" max="12" placeholder="ex. 5.8">
-<label for="runHr">FC moyenne des 20 dernières minutes (bpm, optionnel)</label><input id="runHr" type="number" min="100" max="220">
-<div class="actions"><button class="secondary" onclick="calcTest('run')">Calculer</button></div><div id="runRes" class="hint"></div><p class="hint">Effort maximal et régulier de 30 min après échauffement. Les conversions vers l’allure semi (+6 %) et l’allure de course après le vélo (+4 %) sont des moyennes : à affiner avec tes courses.</p></details></div>
+<details class="icu"><summary><strong>Course · vitesse critique (CS)</strong></summary>
+<p class="hint" style="margin-top:0">La vitesse critique (CS, ou rCP) se calcule avec deux efforts maximaux et réguliers : 3 min, puis 9 min après une récupération complète. Note la distance parcourue à chaque fois. Elle sert à définir tes zones, tes allures d’intervalles et ton allure de course.</p>
+<label for="runMethod">Méthode</label><select id="runMethod" onchange="runMethodChanged()"><option value="cs" selected>Vitesse critique : tests de 3 min et 9 min</option><option value="30">Test de 30 min seul</option></select>
+<div id="csRow"><label for="runD3">Distance du test de 3 min (m)</label><input id="runD3" type="number" min="300" max="1500" placeholder="ex. 850"><label for="runD9" style="margin-top:10px">Distance du test de 9 min (m)</label><input id="runD9" type="number" min="900" max="3600" placeholder="ex. 2200"></div>
+<div id="run30Row" style="display:none"><label for="runDist">Distance parcourue en 30 min (km)</label><input id="runDist" type="number" step="0.01" min="2" max="12" placeholder="ex. 5.8"><label for="runHr" style="margin-top:10px">FC moyenne des 20 dernières minutes (bpm, optionnel)</label><input id="runHr" type="number" min="100" max="220"></div>
+<div class="actions"><button class="secondary" onclick="calcTest('run')">Calculer</button></div><div id="runRes" class="hint"></div><p class="hint">Les conversions vers l’allure semi (+6 %) et l’allure de course après le vélo (+4 %) sont des moyennes, appliquées à la vitesse critique comme à l’allure du test de 30 min : à affiner avec tes courses.</p></details></div>
 <div class="card" id="trendCard"><h2>Évolution de tes indicateurs</h2><div id="trendBox"></div></div>
 
-<div class="card"><h2>À propos de la version 1.8.0</h2><p>La 1.8 ajoute l’indicateur de dernière sauvegarde, la proposition de la semaine suivante dès le dimanche et des aides repliables.</p><details class="icu"><summary><strong>Historique des versions</strong></summary><p>La 1.7 ajoute la carte « Séance du jour » en tête de l’accueil, un bilan du jour qui propose d’alléger la séance, le signalement des données de profil manquantes et la saisie libre du volume hebdomadaire. Cette version ajoute la saisie des disponibilités quotidiennes et la génération d'un planning hebdomadaire. La 0.4.2 ajoute les zones natation et course, utilisées pour les allures cibles des séances. La 0.5 ajoute les séances de tempo, de seuil et d’allure course, et une charge qui évolue avec ta progression (cycle de 4 semaines). La 0.6 ajoute l’export du planning vers le calendrier de l’iPhone (.ics), avec choix du compte Google (0.6.1). La 0.7 écrit chaque séance au format de l’éditeur d’intervals.icu, prête à copier-coller, avec envoi direct par clé API (0.7.1). La 0.8 importe les séances réalisées depuis intervals.icu et les compare au planning. La 0.9 analyse chaque séance réalisée bloc par bloc et prépare un dossier à coller dans Claude. La 0.9.1 permet de restaurer une sauvegarde. La 1.0 planifie par phases jusqu’à la date de la course et recalibre tes zones avec des tests (FTP, natation, course). La 1.1 calibre le volume et l’affûtage sur une préparation de référence (montée progressive, semaine de course allégée, déblocage de la veille). La 1.3 reprend la structure d’un plan complet : cycle INTRO / LOAD / OVERREACH / RECOVERY, affûtage en 3 semaines (assimilation, recharge, approche course) et répartition 19 % natation, 51 % vélo, 30 % course. La 1.5 reprend la forme ressentie, le RPE et les données de récupération de ta montre via intervals.icu. La 1.6 ajoute l’onglet Condition physique (fitness, fatigue, forme et projection jusqu’à la course). La 1.2 permet d’exporter les séances planifiées d’un athlète, avec son accord. La 1.4 affine l’affûtage : trois nages, une qualité par discipline et un enchaînement vélo-course à l’allure semi la semaine de recharge. Elle reste une application personnelle locale : pas de compte, pas de serveur, pas de synchronisation automatique.</p></details><p class="muted">Pour conserver tes données, garde le même navigateur/appareil et utilise régulièrement l'export JSON.</p></div>
+<div class="card"><h2>À propos de la version 1.9.0</h2><p>La 1.9 remplace les tests de vélo et de course par la Critical Power (5 min + 20 min) et la vitesse critique (3 min + 9 min). La 1.8 ajoute l’indicateur de dernière sauvegarde, la proposition de la semaine suivante dès le dimanche et des aides repliables.</p><details class="icu"><summary><strong>Historique des versions</strong></summary><p>La 1.7 ajoute la carte « Séance du jour » en tête de l’accueil, un bilan du jour qui propose d’alléger la séance, le signalement des données de profil manquantes et la saisie libre du volume hebdomadaire. Cette version ajoute la saisie des disponibilités quotidiennes et la génération d'un planning hebdomadaire. La 0.4.2 ajoute les zones natation et course, utilisées pour les allures cibles des séances. La 0.5 ajoute les séances de tempo, de seuil et d’allure course, et une charge qui évolue avec ta progression (cycle de 4 semaines). La 0.6 ajoute l’export du planning vers le calendrier de l’iPhone (.ics), avec choix du compte Google (0.6.1). La 0.7 écrit chaque séance au format de l’éditeur d’intervals.icu, prête à copier-coller, avec envoi direct par clé API (0.7.1). La 0.8 importe les séances réalisées depuis intervals.icu et les compare au planning. La 0.9 analyse chaque séance réalisée bloc par bloc et prépare un dossier à coller dans Claude. La 0.9.1 permet de restaurer une sauvegarde. La 1.0 planifie par phases jusqu’à la date de la course et recalibre tes zones avec des tests (FTP, natation, course). La 1.1 calibre le volume et l’affûtage sur une préparation de référence (montée progressive, semaine de course allégée, déblocage de la veille). La 1.3 reprend la structure d’un plan complet : cycle INTRO / LOAD / OVERREACH / RECOVERY, affûtage en 3 semaines (assimilation, recharge, approche course) et répartition 19 % natation, 51 % vélo, 30 % course. La 1.5 reprend la forme ressentie, le RPE et les données de récupération de ta montre via intervals.icu. La 1.6 ajoute l’onglet Condition physique (fitness, fatigue, forme et projection jusqu’à la course). La 1.2 permet d’exporter les séances planifiées d’un athlète, avec son accord. La 1.4 affine l’affûtage : trois nages, une qualité par discipline et un enchaînement vélo-course à l’allure semi la semaine de recharge. Elle reste une application personnelle locale : pas de compte, pas de serveur, pas de synchronisation automatique.</p></details><p class="muted">Pour conserver tes données, garde le même navigateur/appareil et utilise régulièrement l'export JSON.</p></div>
 <div class="card" id="xportCard"><details><summary style="cursor:pointer;font-size:16px;font-weight:700">Exporter les séances planifiées d’un athlète</summary><div style="margin-top:10px">
 <p class="hint" style="margin-top:0">Pour t’inspirer d’un plan d’entraînement. À utiliser uniquement avec l’accord de l’athlète : il te donne son identifiant et sa clé API (intervals.icu : Settings > Developer Settings). Rien n’est enregistré par l’app et la clé est effacée du champ après l’export.</p>
 <label for="xAthlete">Identifiant de l’athlète</label><input id="xAthlete" type="text" placeholder="ex. i123456" autocomplete="off" autocapitalize="none">
@@ -177,7 +181,7 @@ details.icu{border:1px solid var(--line);border-radius:12px;padding:9px 11px;mar
 <div class="card"><div class="actions" style="margin-top:0"><button class="primary" onclick="refreshFitness()">Mettre à jour depuis intervals.icu</button></div><div id="fitStatus" class="hint"></div>
 <p class="hint">Fitness : charge d’entraînement des 6 dernières semaines. Fatigue : celle de la dernière semaine. Forme : fitness moins fatigue (positive = frais, négative = en charge). Ces valeurs sont calculées par intervals.icu à partir de tes séances ; la partie en pointillés est une projection de ton plan.</p></div>
 </section>
-</main><footer>Mon Coach Half · v1.8.0 · Application personnelle</footer>
+</main><footer>Mon Coach Half · v1.9.0 · Application personnelle</footer>
 <script>
 const days=['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'];
 const choices=[0,30,45,60,90,120,150,180,240];
@@ -350,14 +354,20 @@ const Q_SWIM={
  allure:swimInt('Natation allure half',{warm:500,cool:200,drills:4,reps:5,rmin:3,rmax:8,rep:200,rest:20,code:'ZR',def:112,intensity:'Modéré',quality:true})
 };
 // ---- Séances de test (planifiées toutes les ~8 semaines ; les résultats se saisissent dans Profil > Tests) ----
-const T_FTP=()=>mkS('Vélo','Test FTP 20 min',59,'15 min d’échauffement progressif · 3 × 1 min rapides, récupération 2 min · 5 min faciles · 20 min d’effort maximal et régulier (puissance libre, à la sensation) · 10 min de retour au calme. Note la puissance moyenne des 20 minutes.','Maximal',{quality:true,test:'ftp',steps:[
+const T_FTP=()=>mkS('Vélo','Test CP 20 min',59,'15 min d’échauffement progressif · 3 × 1 min rapides, récupération 2 min · 5 min faciles · 20 min d’effort maximal et régulier (puissance libre, à la sensation) · 10 min de retour au calme. Note la puissance moyenne des 20 minutes. À faire 24 à 48 h avant ou après le test de 5 min.','Maximal',{quality:true,test:'ftp',steps:[
  {name:'Échauffement',items:[{cue:'Progressif',min:15,z:'Z2',ramp:true}]},
  {name:'Rappels',reps:3,items:[{cue:'Rapide',min:1,z:'Z5'},{cue:'Récupération',min:2,z:'Z1'}]},
  {name:'Récupération',items:[{cue:'Facile',min:5,z:'Z1'}]},
  {name:'Test',items:[{cue:'Test maximal régulier',min:20,free:true}]},
  {name:'Retour au calme',items:[{cue:'Souple',min:10,z:'Z1'}]}]});
+const T_CP5=()=>mkS('Vélo','Test CP 5 min',47,'15 min d’échauffement progressif · 3 × 1 min rapides, récupération 2 min · 8 min faciles · 5 min d’effort maximal et régulier (puissance libre, à la sensation) · 10 min de retour au calme. Note la puissance moyenne des 5 minutes. À faire reposé, 24 à 48 h avant ou après le test de 20 min.','Maximal',{quality:true,test:'ftp',steps:[
+ {name:'Échauffement',items:[{cue:'Progressif',min:15,z:'Z2',ramp:true}]},
+ {name:'Rappels',reps:3,items:[{cue:'Rapide',min:1,z:'Z5'},{cue:'Récupération',min:2,z:'Z1'}]},
+ {name:'Récupération',items:[{cue:'Facile',min:8,z:'Z1'}]},
+ {name:'Test',items:[{cue:'Test maximal régulier',min:5,free:true}]},
+ {name:'Retour au calme',items:[{cue:'Souple',min:10,z:'Z1'}]}]});
 const T_CSS=()=>mkS('Natation','Test natation 400 m / 200 m',40,'500 m d’échauffement facile · 4 × 50 m éducatifs · 400 m à fond de façon régulière (chronomètre) · 10 min de récupération très facile · 200 m à fond (chronomètre) · 200 m de retour au calme. Note les deux temps.','Maximal',{quality:true,test:'css'});
-const T_RUN=()=>mkS('Course','Test course 30 min',55,'15 min d’échauffement dont 3 × 20 s de rappels · 30 min à fond de façon régulière (chronomètre et FC) · 10 min de retour au calme. Note la distance parcourue et la FC moyenne des 20 dernières minutes.','Maximal',{quality:true,test:'run'});
+const T_RUN=()=>mkS('Course','Test course 3 min + 9 min (vitesse critique)',67,'15 min d’échauffement dont 3 × 20 s de rappels · 3 min à fond de façon régulière (note la distance) · 30 min de récupération très facile (marche ou trot lent) · 9 min à fond de façon régulière (note la distance) · 10 min de retour au calme.','Maximal',{quality:true,test:'run'});
 // ---- Séances inspirées de la préparation de référence : force vélo, course progressive, déblocage de la veille ----
 Q_BIKE.force=interval('Vélo','Vélo force',{warm:15,cool:10,reps:3,rmin:2,rmax:4,work:12,rest:4,code:'Z3',intensity:'Modéré',note:'assis sur le plat, cadence basse (60 à 70 tr/min), sans à-coups'});
 // Les séances « allure course » peuvent descendre à 1 bloc (affûtage) ; plus d'allègement possible sur les séances d'endurance
@@ -436,7 +446,8 @@ function buildCatalog(focus,n,rec,ctx){
   run:[swimTech,bikeEnd,runEasy,longRun,rq(0),rq(1),strength],
   swim:[swimTech,sq(0),sq(1),swimEnd,bikeEnd,runEasy,strength]
  };
- return lists[focus]||lists.balanced;
+ const L=lists[focus]||lists.balanced;
+ return (tests.has('ftp')&&L.includes(T_FTP))?L.concat([T_CP5]):L;
 }
 
 // ---- Progression de la charge ----
@@ -822,7 +833,7 @@ function renderHistory(){
 function clearHistory(){if(confirm('Effacer tout l’historique enregistré sur cet appareil ?')){workouts=[];put('history',workouts);renderHistory();}}
 
 function exportData(){
- const data={version:'1.8.0',exportedAt:new Date().toISOString(),availability,daySports,bricks:get('bricks',[]),focus:get('focus','balanced'),weekStart:get('weekStart',''),plan,planStart:get('planStart',''),history:workouts,
+ const data={version:'1.9.0',exportedAt:new Date().toISOString(),availability,daySports,bricks:get('bricks',[]),focus:get('focus','balanced'),weekStart:get('weekStart',''),plan,planStart:get('planStart',''),history:workouts,
   profile:{ftp:get('ftp',180),target:get('target',8),swim:get('swim',2000),run:get('run',50),swimMax:get('swimMax',''),runHM:get('runHM',''),hrThr:get('hrThr',0),swimCss:get('swimCss',''),raceDay:get('raceDay',''),raceGoal:get('raceGoal',''),raceDate:get('raceDate','')},readiness:get('readiness',{}),prog:get('prog',null),analyses:get('analyses',{}),feel:get('feel',{}),startTimes,calAlarm:get('calAlarm',30),calEmail:get('calEmail',''),tests:get('tests',[]),testsOn:get('testsOn',true),wellness:get('wellness',{})};
  download('mon-coach-half-donnees.json',JSON.stringify(data,null,2),'application/json');
  put('lastBackup',new Date().toISOString());renderBackup();
@@ -1287,7 +1298,7 @@ function renderRace(){
 }
 
 // ---- Tests et recalibrage des zones ----
-const TEST_LABEL={ftp:'FTP vélo',css:'natation (CSS)',run:'course (30 min)'};
+const TEST_LABEL={ftp:'vélo (CP / FTP)',css:'natation (CSS)',run:'course (vitesse critique)'};
 const lastTest=t=>get('tests',[]).filter(x=>x.type===t).sort((a,b)=>b.date.localeCompare(a.date))[0]||null;
 const testAge=t=>{const l=lastTest(t);return l?Math.round((new Date()-new Date(l.date+'T12:00:00'))/864e5):null;};
 function dueTestsFor(ws,key,rec){
@@ -1311,6 +1322,17 @@ function calcTest(type){
  if(type==='ftp'){
   const P=+$('ftpPower').value,method=$('ftpMethod').value;
   if(!(P>=50&&P<=900)){out.textContent='Saisis une puissance valide (en W).';return;}
+  if(method==='cp'){
+    const P5=+$('ftpPower5').value;
+    if(!(P5>=50&&P5<=1500)){out.textContent='Saisis la puissance moyenne du test de 5 min (en W).';return;}
+    if(!(P5>P)){out.textContent='La puissance du test de 5 min doit être supérieure à celle du test de 20 min : vérifie les deux valeurs.';return;}
+    const cp=(P*1200-P5*300)/900,wp=P5*300-cp*300,est=P*0.95,cur0=curFtp();
+    if(!(cp>=50&&cp<=500)){out.textContent='Résultat peu plausible : vérifie les deux puissances.';return;}
+    pendingTest={type,value:Math.round(cp),extra:{method:'cp',power:P,p5:P5,wprime:Math.round(wp)}};
+    const warn=P5/P<1.08?'<br><span style="color:var(--orange)">Les deux puissances sont proches : si le test de 5 min n’était pas vraiment maximal, la CP est surestimée.</span>':(wp<5000||wp>40000?'<br><span style="color:var(--orange)">W′ inhabituel : vérifie la régularité de tes deux efforts.</span>':'');
+    out.innerHTML=`CP : <strong>${Math.round(cp)} W</strong> · W′ : ${(wp/1000).toFixed(1).replace('.',',')} kJ<br>FTP estimée (95 % du test de 20 min) : ${Math.round(est)} W${warn}<br>Ta FTP actuelle : ${cur0} W (CP : ${sgn((cp-cur0)/cur0*100)} %).<div class="actions"><button class="primary" onclick="applyTest()">Utiliser la CP comme FTP et enregistrer</button></div>`;
+    return;
+   }
   const v=Math.round(P*(method==='20'?0.95:0.75)),cur=curFtp();
   pendingTest={type,value:v,extra:{method,power:P}};
   out.innerHTML=`FTP estimée : <strong>${v} W</strong> (actuelle ${cur} W, ${sgn((v-cur)/cur*100)} %).<div class="actions"><button class="primary" onclick="applyTest()">Appliquer et enregistrer</button></div>`;
@@ -1325,15 +1347,30 @@ function calcTest(type){
   out.innerHTML=`CSS mesurée : <strong>${fmtPace(css)} /100 m</strong>${cur?` (actuelle ${fmtPace(cur)} /100 m, ${sgn((css-cur)/cur*100)} %)`:''}.<div class="actions"><button class="primary" onclick="applyTest()">Appliquer et enregistrer</button></div>`;
  }
  if(type==='run'){
-  const km=+$('runDist').value,hr=+$('runHr').value||0;
-  if(!(km>=2&&km<=12)){out.textContent='Saisis la distance parcourue en 30 min (en km).';return;}
-  const p30=1800/km,fresh=p30*1.06,race=fresh*1.04,tgt=curRunHM();
-  pendingTest={type,value:Math.round(p30),extra:{km,hr,race:Math.round(race)}};
-  out.innerHTML=`Allure seuil : <strong>${fmtPace(p30)} /km</strong>${hr?` · FC seuil ≈ ${hr} bpm`:''}<br>Allure semi à froid estimée : ≈ ${fmtPace(fresh)} /km<br>Allure de course estimée après le vélo : ≈ <strong>${fmtPace(race)} /km</strong>`+
-   (tgt?`<br>Ton allure cible actuelle : ${fmtPace(tgt)} /km (l’estimation est ${Math.abs((race-tgt)/tgt*100).toFixed(1).replace('.',',')} % ${race>tgt?'plus lente':'plus rapide'}${race>tgt*1.03?' : objectif à gagner par la progression, pas à tenir aujourd’hui':''}).`:'')+
-   `<div class="actions"><button class="primary" onclick="applyTest('race')">Utiliser ${fmtPace(race)} comme allure cible</button><button class="secondary" onclick="applyTest()">Garder mon objectif</button></div>`;
- }
+   const rm=$('runMethod').value;let p,hr=0,extra,head;
+   if(rm==='cs'){
+    const d3=+$('runD3').value,d9=+$('runD9').value;
+    if(!(d3>=300&&d3<=1500&&d9>=900&&d9<=3600)){out.textContent='Saisis les deux distances en mètres (3 min : 300 à 1 500 m ; 9 min : 900 à 3 600 m).';return;}
+    const cs=(d9-d3)/360,dp=d3-cs*180;
+    if(!(cs>=2&&cs<=6.5)||!(dp>0)){out.textContent='Résultat incohérent : l’effort de 3 min doit être nettement plus rapide que celui de 9 min. Vérifie les deux distances.';return;}
+    p=1000/cs;extra={method:'cs',d3,d9,dprime:Math.round(dp)};
+    head=`Vitesse critique : <strong>${fmtPace(p)} /km</strong> (${cs.toFixed(2).replace('.',',')} m/s) · D′ ≈ ${Math.round(dp)} m`;
+   }else{
+    const km=+$('runDist').value;hr=+$('runHr').value||0;
+    if(!(km>=2&&km<=12)){out.textContent='Saisis la distance parcourue en 30 min (en km).';return;}
+    p=1800/km;extra={method:'30',km};
+    head=`Allure seuil : <strong>${fmtPace(p)} /km</strong>${hr?` · FC seuil ≈ ${hr} bpm`:''}`;
+   }
+   const fresh=p*1.06,race=fresh*1.04,tgt=curRunHM();
+   extra.hr=hr;extra.race=Math.round(race);
+   pendingTest={type,value:Math.round(p),extra};
+   out.innerHTML=head+`<br>Allure semi à froid estimée : ≈ ${fmtPace(fresh)} /km<br>Allure de course estimée après le vélo : ≈ <strong>${fmtPace(race)} /km</strong>`+
+    (tgt?`<br>Ton allure cible actuelle : ${fmtPace(tgt)} /km (l’estimation est ${Math.abs((race-tgt)/tgt*100).toFixed(1).replace('.',',')} % ${race>tgt?'plus lente':'plus rapide'}${race>tgt*1.03?' : objectif à gagner par la progression, pas à tenir aujourd’hui':''}).`:'')+
+    `<div class="actions"><button class="primary" onclick="applyTest('race')">Utiliser ${fmtPace(race)} comme allure cible</button><button class="secondary" onclick="applyTest()">Garder mon objectif</button></div>`;
+  }
 }
+function ftpMethodChanged(){const m=$('ftpMethod').value;$('cpRow').style.display=m==='cp'?'':'none';$('ftpPowerLbl').textContent=m==='ramp'?'Meilleure minute du test en rampe (W)':'Puissance moyenne du test de 20 min (W)';}
+function runMethodChanged(){const m=$('runMethod').value;$('csRow').style.display=m==='cs'?'':'none';$('run30Row').style.display=m==='30'?'':'none';}
 function applyTest(opt){
  const t=pendingTest;if(!t)return;
  const T=get('tests',[]);T.push({date:iso(new Date()),type:t.type,value:t.value,extra:t.extra});put('tests',T);

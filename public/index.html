@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="Mon Coach">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#102a43">
-<title>Mon Coach Half – v1.7.0</title>
+<title>Mon Coach Half – v1.8.0</title>
 <style>
 :root{--navy:#102a43;--blue:#176b87;--cyan:#d9f0f4;--bg:#f3f6f8;--card:#fff;--ink:#172b3a;--muted:#607483;--line:#dce5ea;--green:#247a57;--orange:#b96b16}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.45}
@@ -46,7 +46,7 @@ details.icu{border:1px solid var(--line);border-radius:12px;padding:9px 11px;mar
 </style>
 </head>
 <body>
-<header><div class="top"><h1>Mon Coach Half</h1><span class="version">Version 1.7.0</span></div><p>Préparation Half Ironman · Objectif juillet 2027 · Coach personnel</p></header>
+<header><div class="top"><h1>Mon Coach Half</h1><span class="version">Version 1.8.0</span></div><p>Préparation Half Ironman · Objectif juillet 2027 · Coach personnel</p></header>
 <nav id="tabs">
 <button class="active" data-tab="home">Accueil</button><button data-tab="week">Ma semaine</button><button data-tab="sessions">Séances</button><button data-tab="log">Suivi</button><button data-tab="fitness">Condition physique</button><button data-tab="profile">Profil</button>
 </nav>
@@ -59,6 +59,7 @@ details.icu{border:1px solid var(--line);border-radius:12px;padding:9px 11px;mar
 <div><label for="feeling">Sensations</label><select id="feeling"><option>Très bonnes</option><option selected>Bonnes</option><option>Moyennes</option><option>Mauvaises</option></select></div>
 <div><label for="todayTime">Temps disponible aujourd'hui</label><select id="todayTime"><option value="0">Repos</option><option value="30">30 min</option><option value="45">45 min</option><option value="60" selected>1 h</option><option value="90">1 h 30</option><option value="120">2 h</option></select></div>
 </div><div id="readiness" class="warn" style="margin-top:12px">Évaluation : prudence normale. Privilégier une séance facile ou technique si la fatigue est modérée.</div><div class="actions"><button class="primary" onclick="saveReadiness()">Enregistrer mon bilan</button></div></div>
+<div id="backupBox"></div>
 <div class="card"><h2>Bonjour !</h2><p class="muted">Ton planning hebdomadaire est construit à partir de tes disponibilités. Mets-les à jour chaque semaine, puis génère une proposition réaliste.</p>
 <div class="grid3"><div class="stat"><strong id="weekHours">0 h</strong><span>Disponibilité saisie</span></div><div class="stat"><strong id="plannedHours">0 h</strong><span>Entraînement planifié</span></div><div class="stat"><strong id="targetHours">8 h</strong><span>Objectif hebdo</span></div></div>
 <div class="actions"><button class="primary" onclick="showTab('week')">Organiser ma semaine</button><button class="secondary" onclick="showTab('log')">Saisir mon bilan</button></div></div>
@@ -76,7 +77,7 @@ details.icu{border:1px solid var(--line);border-radius:12px;padding:9px 11px;mar
 <div class="card" id="planCard"><h2>Planning proposé</h2><div id="weeklyPlan"><p class="muted">Enregistre tes disponibilités puis génère ta semaine.</p></div><div class="actions"><button class="secondary" onclick="copyPlan()">Copier le planning</button><button class="secondary" onclick="downloadPlan()">Exporter en .txt</button><button class="primary" onclick="exportCalendar()">Ajouter au calendrier iPhone</button><button class="secondary" onclick="exportCalendar(true)">Télécharger le .ics</button></div><label for="calAlarm" style="margin-top:12px">Rappel avant chaque séance</label><select id="calAlarm" onchange="put('calAlarm',+this.value)"><option value="0">Aucun</option><option value="15">15 minutes avant</option><option value="30">30 minutes avant</option><option value="60">1 heure avant</option></select>
 <label style="display:flex;align-items:flex-start;gap:7px;margin-top:10px;font-weight:500"><input type="checkbox" id="calFresh" style="width:auto;min-height:0;margin-top:3px" checked> Importer comme de nouvelles séances (à garder coché si un import précédent ne fonctionne plus)</label><label for="calEmail" style="margin-top:12px">Compte du calendrier (adresse e-mail)</label><input id="calEmail" type="email" inputmode="email" autocomplete="off" placeholder="prenom.nom@gmail.com" onchange="saveCalEmail()">
 <div class="actions"><button class="secondary" onclick="showGoogleLinks()">Ajouter à Google Agenda</button></div><div id="gcalLinks"></div>
-<p class="hint">« Ajouter au calendrier iPhone » crée un fichier .ics : une application ne peut pas choisir le compte de destination, c’est l’iPhone qui décide. Dans l’écran d’import, touche le calendrier proposé et choisis celui du compte ci-dessus (ou règle-le comme calendrier par défaut dans Réglages &gt; Calendrier). « Ajouter à Google Agenda » ouvre à la place chaque séance directement sur ce compte. Ce n’est pas une synchronisation continue : après avoir régénéré un planning, exporte-le à nouveau. Une séance disparue du planning doit être supprimée à la main. Si l’import ne fonctionne plus (par exemple après avoir supprimé des séances importées), garde « Importer comme de nouvelles séances » coché : iOS ou le compte peuvent refuser de réimporter un événement déjà supprimé avec le même identifiant. Décoche-la seulement pour mettre à jour des séances encore présentes ; sinon, réimporter la même semaine crée des doublons à supprimer.</p></div>
+<details class="icu"><summary><strong>Aide : calendrier iPhone et Google Agenda</strong></summary><p class="hint">« Ajouter au calendrier iPhone » crée un fichier .ics : une application ne peut pas choisir le compte de destination, c’est l’iPhone qui décide. Dans l’écran d’import, touche le calendrier proposé et choisis celui du compte ci-dessus (ou règle-le comme calendrier par défaut dans Réglages &gt; Calendrier). « Ajouter à Google Agenda » ouvre à la place chaque séance directement sur ce compte. Ce n’est pas une synchronisation continue : après avoir régénéré un planning, exporte-le à nouveau. Une séance disparue du planning doit être supprimée à la main. Si l’import ne fonctionne plus (par exemple après avoir supprimé des séances importées), garde « Importer comme de nouvelles séances » coché : iOS ou le compte peuvent refuser de réimporter un événement déjà supprimé avec le même identifiant. Décoche-la seulement pour mettre à jour des séances encore présentes ; sinon, réimporter la même semaine crée des doublons à supprimer.</p></details></div>
 <div class="card" id="icuCard"><h2>Séances pour intervals.icu</h2>
 <div id="icuSend"><label for="icuKey">Clé API intervals.icu (envoi direct)</label><input id="icuKey" type="password" autocomplete="off" placeholder="Settings > Developer Settings">
 <label style="display:flex;align-items:center;gap:7px;margin-top:8px;font-weight:500"><input type="checkbox" id="icuRemember" style="width:auto;min-height:0"> Mémoriser la clé sur cet appareil</label>
@@ -156,14 +157,15 @@ details.icu{border:1px solid var(--line);border-radius:12px;padding:9px 11px;mar
 <label for="runHr">FC moyenne des 20 dernières minutes (bpm, optionnel)</label><input id="runHr" type="number" min="100" max="220">
 <div class="actions"><button class="secondary" onclick="calcTest('run')">Calculer</button></div><div id="runRes" class="hint"></div><p class="hint">Effort maximal et régulier de 30 min après échauffement. Les conversions vers l’allure semi (+6 %) et l’allure de course après le vélo (+4 %) sont des moyennes : à affiner avec tes courses.</p></details></div>
 <div class="card" id="trendCard"><h2>Évolution de tes indicateurs</h2><div id="trendBox"></div></div>
-<div class="card" id="xportCard"><h2>Exporter les séances planifiées d’un athlète</h2>
+
+<div class="card"><h2>À propos de la version 1.8.0</h2><p>La 1.8 ajoute l’indicateur de dernière sauvegarde, la proposition de la semaine suivante dès le dimanche et des aides repliables.</p><details class="icu"><summary><strong>Historique des versions</strong></summary><p>La 1.7 ajoute la carte « Séance du jour » en tête de l’accueil, un bilan du jour qui propose d’alléger la séance, le signalement des données de profil manquantes et la saisie libre du volume hebdomadaire. Cette version ajoute la saisie des disponibilités quotidiennes et la génération d'un planning hebdomadaire. La 0.4.2 ajoute les zones natation et course, utilisées pour les allures cibles des séances. La 0.5 ajoute les séances de tempo, de seuil et d’allure course, et une charge qui évolue avec ta progression (cycle de 4 semaines). La 0.6 ajoute l’export du planning vers le calendrier de l’iPhone (.ics), avec choix du compte Google (0.6.1). La 0.7 écrit chaque séance au format de l’éditeur d’intervals.icu, prête à copier-coller, avec envoi direct par clé API (0.7.1). La 0.8 importe les séances réalisées depuis intervals.icu et les compare au planning. La 0.9 analyse chaque séance réalisée bloc par bloc et prépare un dossier à coller dans Claude. La 0.9.1 permet de restaurer une sauvegarde. La 1.0 planifie par phases jusqu’à la date de la course et recalibre tes zones avec des tests (FTP, natation, course). La 1.1 calibre le volume et l’affûtage sur une préparation de référence (montée progressive, semaine de course allégée, déblocage de la veille). La 1.3 reprend la structure d’un plan complet : cycle INTRO / LOAD / OVERREACH / RECOVERY, affûtage en 3 semaines (assimilation, recharge, approche course) et répartition 19 % natation, 51 % vélo, 30 % course. La 1.5 reprend la forme ressentie, le RPE et les données de récupération de ta montre via intervals.icu. La 1.6 ajoute l’onglet Condition physique (fitness, fatigue, forme et projection jusqu’à la course). La 1.2 permet d’exporter les séances planifiées d’un athlète, avec son accord. La 1.4 affine l’affûtage : trois nages, une qualité par discipline et un enchaînement vélo-course à l’allure semi la semaine de recharge. Elle reste une application personnelle locale : pas de compte, pas de serveur, pas de synchronisation automatique.</p></details><p class="muted">Pour conserver tes données, garde le même navigateur/appareil et utilise régulièrement l'export JSON.</p></div>
+<div class="card" id="xportCard"><details><summary style="cursor:pointer;font-size:16px;font-weight:700">Exporter les séances planifiées d’un athlète</summary><div style="margin-top:10px">
 <p class="hint" style="margin-top:0">Pour t’inspirer d’un plan d’entraînement. À utiliser uniquement avec l’accord de l’athlète : il te donne son identifiant et sa clé API (intervals.icu : Settings > Developer Settings). Rien n’est enregistré par l’app et la clé est effacée du champ après l’export.</p>
 <label for="xAthlete">Identifiant de l’athlète</label><input id="xAthlete" type="text" placeholder="ex. i123456" autocomplete="off" autocapitalize="none">
 <label for="xKey">Clé API de l’athlète</label><input id="xKey" type="password" autocomplete="off">
 <div class="grid"><div><label for="xFrom">Du</label><input id="xFrom" type="date"></div><div><label for="xTo">Au</label><input id="xTo" type="date"></div></div>
 <div class="actions"><button class="primary" id="xBtn" onclick="exportAthleteWorkouts()">Exporter les séances (fichier JSON)</button></div>
-<div id="xStatus" class="hint"></div></div>
-<div class="card"><h2>À propos de la version 1.7.0</h2><p>La 1.7 ajoute la carte « Séance du jour » en tête de l’accueil, un bilan du jour qui propose d’alléger la séance, le signalement des données de profil manquantes et la saisie libre du volume hebdomadaire. Cette version ajoute la saisie des disponibilités quotidiennes et la génération d'un planning hebdomadaire. La 0.4.2 ajoute les zones natation et course, utilisées pour les allures cibles des séances. La 0.5 ajoute les séances de tempo, de seuil et d’allure course, et une charge qui évolue avec ta progression (cycle de 4 semaines). La 0.6 ajoute l’export du planning vers le calendrier de l’iPhone (.ics), avec choix du compte Google (0.6.1). La 0.7 écrit chaque séance au format de l’éditeur d’intervals.icu, prête à copier-coller, avec envoi direct par clé API (0.7.1). La 0.8 importe les séances réalisées depuis intervals.icu et les compare au planning. La 0.9 analyse chaque séance réalisée bloc par bloc et prépare un dossier à coller dans Claude. La 0.9.1 permet de restaurer une sauvegarde. La 1.0 planifie par phases jusqu’à la date de la course et recalibre tes zones avec des tests (FTP, natation, course). La 1.1 calibre le volume et l’affûtage sur une préparation de référence (montée progressive, semaine de course allégée, déblocage de la veille). La 1.3 reprend la structure d’un plan complet : cycle INTRO / LOAD / OVERREACH / RECOVERY, affûtage en 3 semaines (assimilation, recharge, approche course) et répartition 19 % natation, 51 % vélo, 30 % course. La 1.5 reprend la forme ressentie, le RPE et les données de récupération de ta montre via intervals.icu. La 1.6 ajoute l’onglet Condition physique (fitness, fatigue, forme et projection jusqu’à la course). La 1.2 permet d’exporter les séances planifiées d’un athlète, avec son accord. La 1.4 affine l’affûtage : trois nages, une qualité par discipline et un enchaînement vélo-course à l’allure semi la semaine de recharge. Elle reste une application personnelle locale : pas de compte, pas de serveur, pas de synchronisation automatique.</p><p class="muted">Pour conserver tes données, garde le même navigateur/appareil et utilise régulièrement l'export JSON.</p></div>
+<div id="xStatus" class="hint"></div></div></details></div>
 </section>
 <section id="fitness" class="panel">
 <div class="card"><h2>Condition physique</h2>
@@ -175,7 +177,7 @@ details.icu{border:1px solid var(--line);border-radius:12px;padding:9px 11px;mar
 <div class="card"><div class="actions" style="margin-top:0"><button class="primary" onclick="refreshFitness()">Mettre à jour depuis intervals.icu</button></div><div id="fitStatus" class="hint"></div>
 <p class="hint">Fitness : charge d’entraînement des 6 dernières semaines. Fatigue : celle de la dernière semaine. Forme : fitness moins fatigue (positive = frais, négative = en charge). Ces valeurs sont calculées par intervals.icu à partir de tes séances ; la partie en pointillés est une projection de ton plan.</p></div>
 </section>
-</main><footer>Mon Coach Half · v1.7.0 · Application personnelle</footer>
+</main><footer>Mon Coach Half · v1.8.0 · Application personnelle</footer>
 <script>
 const days=['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'];
 const choices=[0,30,45,60,90,120,150,180,240];
@@ -243,13 +245,15 @@ const DEFAULT_START=['18:30','18:30','18:30','18:30','18:30','09:00','09:00'];
 let startTimes=get('startTimes',DEFAULT_START);
 if(!Array.isArray(startTimes)||startTimes.length!==7||!startTimes.every(v=>/^\d\d:\d\d$/.test(v)))startTimes=DEFAULT_START.slice();
 
-function showTab(id){document.querySelectorAll('.panel').forEach(x=>x.classList.toggle('active',x.id===id));document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('active',x.dataset.tab===id));window.scrollTo({top:0,behavior:'smooth'});if(id==='profile'||id==='sessions')renderZones();if(id==='profile'){renderProg();renderTests();renderTrends();}if(id==='home'){renderRace();renderWell();renderToday();}if(id==='fitness')renderFitness();}
+function showTab(id){document.querySelectorAll('.panel').forEach(x=>x.classList.toggle('active',x.id===id));document.querySelectorAll('nav button').forEach(x=>x.classList.toggle('active',x.dataset.tab===id));window.scrollTo({top:0,behavior:'smooth'});if(id==='profile'||id==='sessions')renderZones();if(id==='profile'){renderProg();renderTests();renderTrends();}if(id==='home'){renderRace();renderWell();renderToday();renderBackup();}if(id==='fitness')renderFitness();}
 document.querySelectorAll('nav button').forEach(b=>b.addEventListener('click',()=>showTab(b.dataset.tab)));
 
 function init(){
  const today=new Date(),curMonday=iso(mondayOf());
  const ws=get('weekStart',null);
- $('weekStart').value=(ws&&ws>=curMonday)?ws:curMonday; // jamais une semaine déjà passée
+ const nm=mondayOf();nm.setDate(nm.getDate()+7);
+ const startDef=today.getDay()===0?iso(nm):curMonday; // le dimanche, on prépare déjà la semaine suivante
+ $('weekStart').value=(ws&&ws>=startDef)?ws:startDef; // jamais une semaine déjà passée
  $('logDate').value=iso(today);
  const target=get('target',8);
  $('weeklyTarget').value=String(target).replace('.',',');$('weeklyGoalProfile').value=String(target).replace('.',',');
@@ -259,7 +263,7 @@ function init(){
  // Le bilan du jour n'est restauré que s'il date d'aujourd'hui
  const r=get('readiness',null);
  if(r&&r.date===iso(today)){$('sleep').value=r.sleep;$('fatigue').value=r.fatigue;$('feeling').value=r.feeling;$('todayTime').value=r.time;}
- renderAvailability();renderPlan();renderHistory();renderZones();refreshStats();updateReadiness();renderProg();renderRace();renderTests();renderTrends();renderWell();renderFitness();
+ renderAvailability();renderPlan();renderHistory();renderZones();refreshStats();updateReadiness();renderProg();renderRace();renderTests();renderTrends();renderWell();renderFitness();renderBackup();
  ['sleep','fatigue','feeling','todayTime'].forEach(id=>{$(id).addEventListener('input',updateReadiness);$(id).addEventListener('change',updateReadiness);});
  $('weeklyTarget').addEventListener('change',()=>setTarget($('weeklyTarget').value));
  $('weeklyGoalProfile').addEventListener('change',()=>setTarget($('weeklyGoalProfile').value));
@@ -569,6 +573,7 @@ function generatePlan(){
  if(tests.length)notes.push(`Semaine de tests : ${tests.map(t=>TEST_LABEL[t]).join(', ')}. Saisis les résultats dans Profil > Tests pour mettre à jour tes zones.`);
  if(notPlaced.length)notes.push('Séances non placées : '+notPlaced.join(' ; ')+'.');
  if(planned<cap*0.85&&(!ri||phaseWeeks))notes.push(`Volume planifié : ${(planned/60).toFixed(1)} h pour un objectif de ${target} h. Il se rapproche de l’objectif au fil des semaines si tes séances sont bien réalisées.`);
+ {const oldStart=get('planStart','');if(plan.length&&oldStart&&ws>oldStart)put('prevPlan',{start:oldStart,plan:plan});}
  plan=result;put('plan',plan);put('planStart',ws);put('planNotes',notes);
  if(pr.commit)put('prog',pr.state);
  renderPlan();renderProg();refreshStats();renderRace();
@@ -681,6 +686,25 @@ function adaptSession(i,mode){
  put('plan',plan);renderPlan();refreshStats();
 }
 function generateFromHome(){generatePlan();renderToday();}
+
+// ---- Dernière sauvegarde ----
+function renderBackup(){
+ const el=$('backupBox');if(!el)return;
+ const lb=get('lastBackup',null),d=lb?new Date(lb):null;
+ const age=d&&!isNaN(d)?Math.max(0,Math.floor((Date.now()-d.getTime())/864e5)):null;
+ const hasData=workouts.length>0||plan.length>0||get('ftp',null)!=null;
+ if(age==null&&!hasData){el.innerHTML='';return;}
+ const when=age==null?'jamais':age===0?'aujourd’hui':age===1?'hier':'il y a '+age+' jours';
+ el.innerHTML=(age==null||age>=7)
+  ?`<div class="warn" style="margin:0 0 12px"><strong>Dernière sauvegarde : ${when}.</strong> Tes données restent sur cet appareil et cette adresse : une sauvegarde évite de tout perdre.<div class="actions" style="margin-top:8px"><button class="primary" onclick="exportData()">Sauvegarder maintenant</button></div></div>`
+  :`<div class="card" style="padding:10px 15px;display:flex;justify-content:space-between;align-items:center;gap:10px"><span class="muted">Dernière sauvegarde : ${when}</span><button class="secondary" onclick="exportData()">Sauvegarder</button></div>`;
+}
+// « Fait » depuis la fin de la semaine en cours (séance du plan précédent)
+function logQuick(sport,min){
+ $('logDate').value=iso(new Date());$('sport').value=sport==='Course'?'Course à pied':sport;$('duration').value=min;
+ showTab('log');setTimeout(()=>{try{$('rpe').focus({preventScroll:true});}catch(e){}},400);
+}
+
 // « Fait » : préremplit l'enregistrement d'une séance réalisée
 function logPlanned(i){
  const x=plan[i];if(!x)return;
@@ -711,10 +735,17 @@ function renderToday(){
   box.innerHTML=`<p class="muted">${plan.length?'Ton dernier planning date d’une semaine passée.':'Aucun planning pour le moment.'} Tes disponibilités enregistrées sont réutilisées.</p><div class="actions"><button class="primary" onclick="generateFromHome()">Générer la semaine du ${esc(wk)}</button><button class="secondary" onclick="showTab('week')">Modifier mes disponibilités</button></div>`+missing;
   return;
  }
- if(ps>cur){box.innerHTML=`<p class="muted">Ton planning est prévu pour la semaine du ${esc(fmt(mondayOf(ps)))}.</p><div class="actions">${seeWeek}</div>`+missing;return;}
+ if(ps>cur){
+  const pv=get('prevPlan',null),todayIso=iso(new Date());
+  const its=(pv&&pv.start===cur&&Array.isArray(pv.plan))?pv.plan.filter(x=>x.day===idx&&!x.event):[];
+  const rest=its.map(x=>{const dn=workouts.some(w=>w.date===todayIso&&planSport(w.sport)===x.sport);return `<div class="session"><span class="pill">${esc(x.sport)}</span><strong>${esc(x.title)} · ${x.min} min</strong><p>${esc(fillZones(x.sport,x.desc))}</p>${dn?'<p style="margin:6px 0 0;color:var(--green);font-weight:600">✔ Réalisée</p>':`<div class="actions" style="margin-top:8px"><button class="primary" onclick="logQuick('${x.sport}',${x.min})">Fait</button></div>`}</div>`;}).join('');
+  box.innerHTML=(its.length?`<p class="muted" style="margin:0 0 4px"><strong>${esc(days[idx]+' '+fmt(new Date()))}</strong> · fin de la semaine en cours</p>${rest}`:'')+`<p class="muted">Ton planning est prévu pour la semaine du ${esc(fmt(mondayOf(ps)))}.</p><div class="actions">${seeWeek}</div>`+missing;return;
+ }
+ const wsv=iso(mondayOf($('weekStart').value));
+ const prep=cls=>(idx===6&&ps===cur&&wsv>cur)?`<button class="${cls}" onclick="generateFromHome()">Préparer la semaine du ${esc(fmt(mondayOf(wsv)))}</button>`:'';
  const st=readinessState(),doneMap=matchDone(),head=`${days[idx]} ${fmt(new Date())}`;
  const todays=plan.map((x,i)=>({x,i})).filter(o=>o.x.day===idx&&!o.x.event);
- if(!todays.length){box.innerHTML=`<p class="muted"><strong>${esc(head)}</strong> : pas de séance prévue, repos ou récupération.</p><div class="actions">${seeWeek}</div>`+missing;return;}
+ if(!todays.length){box.innerHTML=`<p class="muted"><strong>${esc(head)}</strong> : pas de séance prévue, repos ou récupération.</p><div class="actions">${prep('primary')}${seeWeek}</div>`+missing;return;}
  const reason=st.why.length?`Bilan du jour (${st.why.join(', ')})`:'Bilan du jour';
  let html=`<p class="muted" style="margin:0 0 4px"><strong>${esc(head)}</strong></p>`;
  if(st.level==='rest')html+=`<div class="warn" style="margin:8px 0">Tu as indiqué 0 min disponible aujourd’hui : décale la séance ou régénère ta semaine.</div>`;
@@ -737,7 +768,7 @@ function renderToday(){
   return out;
  }).join('');
  if(st.level==='soft'&&todays.some(o=>(o.x.orig||o.x).quality||(o.x.orig||o.x).long))html+=`<p class="hint">Fatigue modérée : garde la séance et juge à la fin de l’échauffement.</p>`;
- box.innerHTML=html+`<div class="actions">${seeWeek}</div>`+missing;
+ box.innerHTML=html+`<div class="actions">${prep('secondary')}${seeWeek}</div>`+missing;
 }
 
 
@@ -778,7 +809,7 @@ function addWorkout(){
  ['duration','distance','avgPower','avgHr','pace','notes'].forEach(id=>$(id).value='');
 }
 function renderHistory(){
- const el=$('history');renderToday();
+ const el=$('history');renderToday();renderBackup();
  if(!workouts.length){el.innerHTML='<p class="muted">Aucune séance enregistrée.</p>';return;}
  const today=new Date();today.setHours(0,0,0,0);
  const last7=workouts.filter(x=>{if(!x.date)return false;const diff=Math.round((today-new Date(x.date+'T00:00:00'))/864e5);return diff>=0&&diff<7;}).reduce((a,b)=>a+(b.duration||0),0);
@@ -791,9 +822,10 @@ function renderHistory(){
 function clearHistory(){if(confirm('Effacer tout l’historique enregistré sur cet appareil ?')){workouts=[];put('history',workouts);renderHistory();}}
 
 function exportData(){
- const data={version:'1.7.0',exportedAt:new Date().toISOString(),availability,daySports,bricks:get('bricks',[]),focus:get('focus','balanced'),weekStart:get('weekStart',''),plan,planStart:get('planStart',''),history:workouts,
+ const data={version:'1.8.0',exportedAt:new Date().toISOString(),availability,daySports,bricks:get('bricks',[]),focus:get('focus','balanced'),weekStart:get('weekStart',''),plan,planStart:get('planStart',''),history:workouts,
   profile:{ftp:get('ftp',180),target:get('target',8),swim:get('swim',2000),run:get('run',50),swimMax:get('swimMax',''),runHM:get('runHM',''),hrThr:get('hrThr',0),swimCss:get('swimCss',''),raceDay:get('raceDay',''),raceGoal:get('raceGoal',''),raceDate:get('raceDate','')},readiness:get('readiness',{}),prog:get('prog',null),analyses:get('analyses',{}),feel:get('feel',{}),startTimes,calAlarm:get('calAlarm',30),calEmail:get('calEmail',''),tests:get('tests',[]),testsOn:get('testsOn',true),wellness:get('wellness',{})};
  download('mon-coach-half-donnees.json',JSON.stringify(data,null,2),'application/json');
+ put('lastBackup',new Date().toISOString());renderBackup();
 }
 // ---- Restauration d'une sauvegarde (fichier JSON exporté par l'app) ----
 function importBackup(inp){
@@ -811,7 +843,7 @@ function importBackup(inp){
    ftp:p.ftp,target:p.target,swim:p.swim,run:p.run,swimMax:p.swimMax,runHM:p.runHM,hrThr:p.hrThr,raceGoal:p.raceGoal,raceDate:p.raceDate,
    readiness:obj(d.readiness)?d.readiness:undefined,prog:d.prog,analyses:obj(d.analyses)?d.analyses:undefined,feel:obj(d.feel)?d.feel:undefined,
    startTimes:arr(d.startTimes)?d.startTimes:undefined,calAlarm:d.calAlarm,calEmail:d.calEmail,
-   swimCss:p.swimCss,raceDay:p.raceDay,tests:arr(d.tests)?d.tests:undefined,testsOn:d.testsOn,wellness:obj(d.wellness)?d.wellness:undefined
+   lastBackup:typeof d.exportedAt==='string'?d.exportedAt:undefined,swimCss:p.swimCss,raceDay:p.raceDay,tests:arr(d.tests)?d.tests:undefined,testsOn:d.testsOn,wellness:obj(d.wellness)?d.wellness:undefined
   };
   Object.keys(map).forEach(k=>{if(map[k]!==undefined)put(k,map[k]);});
   alert('Sauvegarde restaurée.');location.reload();

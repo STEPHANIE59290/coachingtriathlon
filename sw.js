@@ -1,6 +1,6 @@
 // Service worker de Mon Coach Half : usage hors ligne SANS jamais figer une ancienne version.
 // Pages : réseau d'abord (toujours la dernière version), cache seulement en secours (hors ligne ou réseau lent).
-const VERSION = '2.11.0';
+const VERSION = '2.13.0';
 const CACHE = 'mon-coach-half-' + VERSION;
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './apple-touch-icon.png', './icon-192.png', './icon-512.png', './icon-maskable-512.png'];
 

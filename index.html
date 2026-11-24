@@ -9,7 +9,10 @@
 <meta name="apple-mobile-web-app-title" content="Mon Coach">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#102a43">
-<title>Mon Coach Half – v2.4.0</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<title>Mon Coach Half – v2.9.0</title>
 <style>
 :root{--navy:#102a43;--blue:#176b87;--cyan:#d9f0f4;--bg:#f3f6f8;--card:#fff;--ink:#172b3a;--muted:#607483;--line:#dce5ea;--green:#247a57;--orange:#b96b16}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.45}
@@ -46,13 +49,14 @@ details.icu{border:1px solid var(--line);border-radius:12px;padding:9px 11px;mar
 </style>
 </head>
 <body>
-<header><div class="top"><h1>Mon Coach Half</h1><span class="version">Version 2.4.0</span></div><p>Préparation Half Ironman · Objectif juillet 2027 · Coach personnel</p></header>
+<header><div class="top"><h1>Mon Coach Half</h1><span class="version">Version 2.9.0</span></div><p>Préparation Half Ironman · Objectif juillet 2027 · Coach personnel</p></header>
 <nav id="tabs">
 <button class="active" data-tab="home">Accueil</button><button data-tab="week">Ma semaine</button><button data-tab="sessions">Séances</button><button data-tab="log">Suivi</button><button data-tab="fitness">Condition physique</button><button data-tab="profile">Profil</button>
 </nav>
 <main>
 <section id="home" class="panel active">
 <div class="card" id="todayCard"><h2>Séance du jour</h2><div id="todayBox"></div><div id="homeImportMsg" class="hint"></div></div>
+<div class="card" id="rpeCard" style="display:none"><h2>Séances sans RPE</h2><div id="rpeBox"></div></div>
 <div class="card" id="coachCard"><h2>Consigne du coach</h2><div id="coachShow"></div><details class="icu"><summary><strong>Coller une consigne de Claude</strong></summary><textarea id="coachNote" rows="5" maxlength="2000" placeholder="Colle ici la réponse de Claude après une analyse"></textarea><div class="actions"><button class="primary" onclick="saveCoach()">Enregistrer</button><button class="secondary" onclick="clearCoach()">Effacer</button></div></details></div>
 <div class="card" id="bilanCard"><h2>Bilan du jour</h2><div class="grid">
 <div><label for="sleep">Sommeil (heures)</label><input id="sleep" type="number" min="0" max="14" step=".5" value="7.5"></div>
@@ -111,7 +115,7 @@ details.icu{border:1px solid var(--line);border-radius:12px;padding:9px 11px;mar
 <div class="session"><span class="pill">NATATION · seuil</span><h3>Seuil – 1 800 m</h3><p>• 500 m d’échauffement en Z2<span class="zt" data-sport="Natation" data-z="2"></span><br>• 4 × 50 m éducatifs, récupération 15 s<br>• 10 × 100 m en Z4<span class="zt" data-sport="Natation" data-z="4"></span>, récupération 15 s<br>• 200 m de retour au calme</p></div>
 <div class="session"><span class="pill">NATATION · allure half</span><h3>Allure course – 1 900 m</h3><p>• 500 m d’échauffement en Z2<span class="zt" data-sport="Natation" data-z="2"></span><br>• 4 × 50 m éducatifs, récupération 15 s<br>• 5 × 200 m à l’allure course<span class="zt" data-sport="Natation" data-z="R"></span>, récupération 20 s<br>• 200 m de retour au calme</p></div>
 <div class="warn">Zones calculées depuis ton profil : FTP vélo <strong id="ftpNow">180 W</strong> · vitesse max 100 m <strong id="swimNow">non renseignée</strong> · allure semi <strong id="runNow">non renseignée</strong>. Valeurs provisoires, à recalibrer avec des tests adaptés.</div></div>
-<div class="card"><h2>Séance libre → intervals.icu → Garmin</h2><p class="muted">Écris ta séance comme tu la dirais, par exemple « 15 min échauffement, 5 × 4 min Z4 récup 2 min, 10 min retour au calme ». L’app la réécrit au format intervals.icu (échauffement, série répétée, retour au calme), compatible Garmin, puis l’envoie dans ton calendrier.</p><div class="grid"><div><label for="freeSport">Sport</label><select id="freeSport"><option>Vélo</option><option>Course</option><option>Natation</option><option>Renforcement</option></select></div><div><label for="freeTitle">Titre (facultatif)</label><input id="freeTitle" placeholder="ex. Seuil 5 × 4 min"></div></div><div class="grid"><div><label for="freeDate">Jour</label><input id="freeDate" type="date"></div><div><label for="freeTime">Heure</label><input id="freeTime" type="time" value="18:30"></div></div><label for="garminText">Séance</label><textarea id="garminText" placeholder="Ex. 10 min échauffement, 3 × 8 min Z4 récup 2 min, 10 min retour au calme"></textarea><div class="actions"><button class="secondary" onclick="freePreview()">Convertir</button><button class="primary" onclick="freeSend()">Envoyer vers intervals.icu</button></div><div id="freePreview"></div><div id="freeStatus" class="hint"></div></div>
+<div class="card"><h2>Séance libre → intervals.icu → Garmin</h2><p class="muted">Écris ta séance comme tu la dirais, par exemple « 15 min échauffement, 5 × 4 min Z4 récup 2 min, 10 min retour au calme ». L’app la réécrit au format intervals.icu (échauffement, série répétée, retour au calme), compatible Garmin, puis l’envoie dans ton calendrier.</p><div class="grid"><div><label for="freeSport">Sport</label><select id="freeSport"><option>Vélo</option><option>Course</option><option>Natation</option><option>Renforcement</option></select></div><div><label for="freeTitle">Titre (facultatif)</label><input id="freeTitle" placeholder="ex. Seuil 5 × 4 min"></div></div><div class="grid"><div><label for="freeDate">Jour</label><input id="freeDate" type="date"></div><div><label for="freeTime">Heure</label><input id="freeTime" type="time" value="18:30"></div></div><label for="garminText">Séance</label><textarea id="garminText" placeholder="Ex. 10 min échauffement, 3 × 8 min Z4 récup 2 min, 10 min retour au calme"></textarea><div class="actions"><button class="secondary" onclick="freePreview()">Convertir</button><button class="primary" onclick="freeSend()">Envoyer vers intervals.icu</button></div><div class="actions"><button class="secondary" onclick="freeAdd()">Ajouter à ma semaine (sans envoyer)</button></div><div id="freePreview"></div><div id="freeStatus" class="hint"></div></div>
 </section>
 
 <section id="log" class="panel">
@@ -164,7 +168,7 @@ details.icu{border:1px solid var(--line);border-radius:12px;padding:9px 11px;mar
 <div class="actions"><button class="secondary" onclick="calcTest('run')">Calculer</button></div><div id="runRes" class="hint"></div><p class="hint">Les conversions vers l’allure semi (+6 %) et l’allure de course après le vélo (+4 %) sont des moyennes, appliquées à la vitesse critique comme à l’allure du test de 30 min : à affiner avec tes courses.</p></details></div>
 <div class="card" id="trendCard"><h2>Évolution de tes indicateurs</h2><div id="trendBox"></div></div>
 
-<div class="card"><details><summary style="cursor:pointer;font-size:16px;font-weight:700">À propos de la version 2.4.0</summary><p>La 2.4 ajoute la saisie directe de la FTP sur l’accueil (comme la natation et la course) et la « Séance libre » : un texte classique est réécrit au format intervals.icu, compatible Garmin, et envoyé dans le calendrier. La 2.3 remplace la saisie des disponibilités par des créneaux (séance 1, séance 2…, sports possibles, durée max, enchaînés vélo-course) : le volume hebdomadaire est le cumul de ces créneaux et ne se saisit plus. La 2.2 remplace « Disponibilité saisie » par « Réalisé cette semaine », replie la saisie manuelle (secours) et transforme les boutons « Fait » en import depuis intervals.icu. La 2.1 corrige la reprise (séances variées, charge à 65 % puis 80 %, sans qualité ni séance longue), ajoute « Je n’ai pas pu » pour décaler ou abandonner une séance, l’historique des bilans du jour (relié à la charge) et la consigne du coach. La 2.0 ajoute le mode reprise après arrêt, la saisie directe des données manquantes depuis l’accueil et la semaine type. La 1.9 remplace les tests de vélo et de course par la Critical Power (5 min + 20 min) et la vitesse critique (3 min + 9 min). La 1.8 ajoute l’indicateur de dernière sauvegarde, la proposition de la semaine suivante dès le dimanche et des aides repliables.</p><details class="icu"><summary><strong>Historique des versions</strong></summary><p>La 1.7 ajoute la carte « Séance du jour » en tête de l’accueil, un bilan du jour qui propose d’alléger la séance, le signalement des données de profil manquantes et la saisie libre du volume hebdomadaire. Cette version ajoute la saisie des disponibilités quotidiennes et la génération d'un planning hebdomadaire. La 0.4.2 ajoute les zones natation et course, utilisées pour les allures cibles des séances. La 0.5 ajoute les séances de tempo, de seuil et d’allure course, et une charge qui évolue avec ta progression (cycle de 4 semaines). La 0.6 ajoute l’export du planning vers le calendrier de l’iPhone (.ics), avec choix du compte Google (0.6.1). La 0.7 écrit chaque séance au format de l’éditeur d’intervals.icu, prête à copier-coller, avec envoi direct par clé API (0.7.1). La 0.8 importe les séances réalisées depuis intervals.icu et les compare au planning. La 0.9 analyse chaque séance réalisée bloc par bloc et prépare un dossier à coller dans Claude. La 0.9.1 permet de restaurer une sauvegarde. La 1.0 planifie par phases jusqu’à la date de la course et recalibre tes zones avec des tests (FTP, natation, course). La 1.1 calibre le volume et l’affûtage sur une préparation de référence (montée progressive, semaine de course allégée, déblocage de la veille). La 1.3 reprend la structure d’un plan complet : cycle INTRO / LOAD / OVERREACH / RECOVERY, affûtage en 3 semaines (assimilation, recharge, approche course) et répartition 19 % natation, 51 % vélo, 30 % course. La 1.5 reprend la forme ressentie, le RPE et les données de récupération de ta montre via intervals.icu. La 1.6 ajoute l’onglet Condition physique (fitness, fatigue, forme et projection jusqu’à la course). La 1.2 permet d’exporter les séances planifiées d’un athlète, avec son accord. La 1.4 affine l’affûtage : trois nages, une qualité par discipline et un enchaînement vélo-course à l’allure semi la semaine de recharge. Elle reste une application personnelle locale : pas de compte, pas de serveur, pas de synchronisation automatique.</p></details><p class="muted">Pour conserver tes données, garde le même navigateur/appareil et utilise régulièrement l'export JSON.</p></details></div>
+<div class="card"><details><summary style="cursor:pointer;font-size:16px;font-weight:700">À propos de la version 2.9.0</summary><p>La 2.9 ajoute l’usage hors ligne (service worker : réseau d’abord, la copie en mémoire ne sert qu’en secours). La 2.8 rend l’app installable proprement (manifest, icônes) et évite qu’une ancienne version reste en cache. La 2.7 ne laisse plus la charge monter sans RPE (pastilles 1 à 10 sur l’accueil pour noter une séance), propose un créneau précis pour chaque séance non placée et remplace les fenêtres de confirmation par un message discret. La 2.6 adapte la charge discipline par discipline : si ton RPE, ta forme et ton taux de réalisation montrent que le vélo passe mieux que la course (ou l’inverse), les séances de la discipline qui répond bien s’allongent de 5 % et celles de l’autre sont allégées de 5 %, dans une limite de ±15 %. La 2.5 protège les données (stockage persistant demandé, conseil d’installation sur l’écran d’accueil, partage de la sauvegarde en un geste), intègre la séance libre à « Ma semaine » et ajoute des repères de ravitaillement (glucides et boisson) sur les séances de vélo et de course de 75 min ou plus, à ajuster à ta tolérance digestive. La 2.4 ajoute la saisie directe de la FTP sur l’accueil (comme la natation et la course) et la « Séance libre » : un texte classique est réécrit au format intervals.icu, compatible Garmin, et envoyé dans le calendrier. La 2.3 remplace la saisie des disponibilités par des créneaux (séance 1, séance 2…, sports possibles, durée max, enchaînés vélo-course) : le volume hebdomadaire est le cumul de ces créneaux et ne se saisit plus. La 2.2 remplace « Disponibilité saisie » par « Réalisé cette semaine », replie la saisie manuelle (secours) et transforme les boutons « Fait » en import depuis intervals.icu. La 2.1 corrige la reprise (séances variées, charge à 65 % puis 80 %, sans qualité ni séance longue), ajoute « Je n’ai pas pu » pour décaler ou abandonner une séance, l’historique des bilans du jour (relié à la charge) et la consigne du coach. La 2.0 ajoute le mode reprise après arrêt, la saisie directe des données manquantes depuis l’accueil et la semaine type. La 1.9 remplace les tests de vélo et de course par la Critical Power (5 min + 20 min) et la vitesse critique (3 min + 9 min). La 1.8 ajoute l’indicateur de dernière sauvegarde, la proposition de la semaine suivante dès le dimanche et des aides repliables.</p><details class="icu"><summary><strong>Historique des versions</strong></summary><p>La 1.7 ajoute la carte « Séance du jour » en tête de l’accueil, un bilan du jour qui propose d’alléger la séance, le signalement des données de profil manquantes et la saisie libre du volume hebdomadaire. Cette version ajoute la saisie des disponibilités quotidiennes et la génération d'un planning hebdomadaire. La 0.4.2 ajoute les zones natation et course, utilisées pour les allures cibles des séances. La 0.5 ajoute les séances de tempo, de seuil et d’allure course, et une charge qui évolue avec ta progression (cycle de 4 semaines). La 0.6 ajoute l’export du planning vers le calendrier de l’iPhone (.ics), avec choix du compte Google (0.6.1). La 0.7 écrit chaque séance au format de l’éditeur d’intervals.icu, prête à copier-coller, avec envoi direct par clé API (0.7.1). La 0.8 importe les séances réalisées depuis intervals.icu et les compare au planning. La 0.9 analyse chaque séance réalisée bloc par bloc et prépare un dossier à coller dans Claude. La 0.9.1 permet de restaurer une sauvegarde. La 1.0 planifie par phases jusqu’à la date de la course et recalibre tes zones avec des tests (FTP, natation, course). La 1.1 calibre le volume et l’affûtage sur une préparation de référence (montée progressive, semaine de course allégée, déblocage de la veille). La 1.3 reprend la structure d’un plan complet : cycle INTRO / LOAD / OVERREACH / RECOVERY, affûtage en 3 semaines (assimilation, recharge, approche course) et répartition 19 % natation, 51 % vélo, 30 % course. La 1.5 reprend la forme ressentie, le RPE et les données de récupération de ta montre via intervals.icu. La 1.6 ajoute l’onglet Condition physique (fitness, fatigue, forme et projection jusqu’à la course). La 1.2 permet d’exporter les séances planifiées d’un athlète, avec son accord. La 1.4 affine l’affûtage : trois nages, une qualité par discipline et un enchaînement vélo-course à l’allure semi la semaine de recharge. Elle reste une application personnelle locale : pas de compte, pas de serveur, pas de synchronisation automatique.</p></details><p class="muted">Pour conserver tes données, garde le même navigateur/appareil et utilise régulièrement l'export JSON.</p></details></div>
 <div class="card" id="xportCard"><details><summary style="cursor:pointer;font-size:16px;font-weight:700">Exporter les séances planifiées d’un athlète</summary><div style="margin-top:10px">
 <p class="hint" style="margin-top:0">Pour t’inspirer d’un plan d’entraînement. À utiliser uniquement avec l’accord de l’athlète : il te donne son identifiant et sa clé API (intervals.icu : Settings > Developer Settings). Rien n’est enregistré par l’app et la clé est effacée du champ après l’export.</p>
 <label for="xAthlete">Identifiant de l’athlète</label><input id="xAthlete" type="text" placeholder="ex. i123456" autocomplete="off" autocapitalize="none">
@@ -184,7 +188,7 @@ details.icu{border:1px solid var(--line);border-radius:12px;padding:9px 11px;mar
 <div class="card"><div class="actions" style="margin-top:0"><button class="primary" onclick="refreshFitness()">Mettre à jour depuis intervals.icu</button></div><div id="fitStatus" class="hint"></div>
 <p class="hint">Fitness : charge d’entraînement des 6 dernières semaines. Fatigue : celle de la dernière semaine. Forme : fitness moins fatigue (positive = frais, négative = en charge). Ces valeurs sont calculées par intervals.icu à partir de tes séances ; la partie en pointillés est une projection de ton plan.</p></div>
 </section>
-</main><footer>Mon Coach Half · v2.4.0 · Application personnelle</footer>
+</main><footer>Mon Coach Half · v2.9.0 · Application personnelle</footer>
 <script>
 const days=['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'];
 const choices=[0,30,45,60,90,120,150,180,240];
@@ -285,6 +289,7 @@ function init(){
  if(r&&r.date===iso(today)){$('sleep').value=r.sleep;$('fatigue').value=r.fatigue;$('feeling').value=r.feeling;$('todayTime').value=r.time;}
  else{const W0=get('wellness',{}),t0=W0[iso(today)];if(t0&&t0.sleep>0)$('sleep').value=t0.sleep.toFixed(1);}
  renderAvailability();renderPlan();renderHistory();renderZones();refreshStats();updateReadiness();renderProg();renderRace();renderTests();renderTrends();renderWell();renderFitness();renderBackup();$('resumeDate').value=get('resume','');renderResume();renderRdLog();renderCoach();if(!$('freeDate').value)$('freeDate').value=iso(new Date());
+ try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist();}catch(e){}
  ['sleep','fatigue','feeling','todayTime'].forEach(id=>{$(id).addEventListener('input',updateReadiness);$(id).addEventListener('change',updateReadiness);});
  ['ftp','swimMax','swimCss','runHM'].forEach(id=>$(id).addEventListener('input',renderZones));
 }
@@ -326,7 +331,7 @@ function saveAvailability(silent){
  refreshStats();
  const warns=[];
  days.forEach((d,i)=>slots[i].forEach((sl,k)=>{if(!sl.sports.length)warns.push(`${d} : la séance ${k+1} n’a aucun sport coché.`);}));
- if(!silent)alert('Disponibilités enregistrées.'+(warns.length?'\n\n'+warns.join('\n'):''));
+ if(!silent){if(warns.length)alert('Disponibilités enregistrées.\n\n'+warns.join('\n'));else toast('Disponibilités enregistrées.');}
  return warns;
 }
 
@@ -483,13 +488,13 @@ function buildCatalog(focus,n,rec,ctx){
 // Cycle de 4 semaines : la 4e est une semaine de récupération (−30 %).
 function planProgression(ws){
  const st=get('prog',null),lvl0=st&&typeof st.level==='number'?st.level:1;
- let level=lvl0,week=1,n=1,note='',commit=true;
+ let level=lvl0,week=1,n=1,note='',commit=true,adj=Object.assign({},(st&&st.adj)||{});
  if(st&&st.last){
   if(ws<=st.last){week=st.week;n=st.n;commit=false;}
   else{
    const prev=mondayOf(st.last),gap=Math.round((mondayOf(ws)-prev)/(7*864e5));
    n=st.n+1;week=st.week%4+1;
-   if(gap>=2){level=clamp(+(lvl0-0.10).toFixed(2),0.7,1.4);week=1;note=`Reprise après ${gap-1} semaine(s) sans planning : charge réduite et cycle relancé.`;}
+   if(gap>=2){level=clamp(+(lvl0-0.10).toFixed(2),0.7,1.4);week=1;adj={};note=`Reprise après ${gap-1} semaine(s) sans planning : charge réduite et cycle relancé.`;}
    else{
     const end=new Date(prev);end.setDate(end.getDate()+6);
     const a=iso(prev),b=iso(end),logs=workouts.filter(x=>x.date&&x.date>=a&&x.date<=b);
@@ -501,20 +506,35 @@ function planProgression(ws){
      const fl=logs.map(x=>+x.feel).filter(v=>v>0),feel=fl.length?fl.reduce((s,v)=>s+v,0)/fl.length:null;
      let d=0;
      if(comp<0.6||rpe>=8||(feel!=null&&feel>=4))d=-0.10;else if(comp>=0.85&&rpe<=6.5&&(feel==null||feel<=3))d=0.05;
+     const noRpe=rp.length<Math.ceil(logs.length/2);if(noRpe&&d>0)d=0; // pas de hausse sans RPE : l'absence de donnée n'est pas « facile »
      const reds=Object.entries(get('rdLog',{})).filter(([k,v])=>k>=a&&k<=b&&v&&v.lvl==='red').length;if(reds>=3)d=-0.10;
      level=clamp(+(lvl0+d).toFixed(2),0.7,1.4);
      note=`Bilan de la semaine précédente : ${done} min réalisées sur ${planned} prévues (${Math.round(comp*100)} %), RPE moyen ${rpe.toFixed(1)}${feel!=null?`, forme ${feelLabel(feel)}`:''}${reds>=3?', '+reds+' jours de bilan en récupération prioritaire':''} → ${d>0?'charge +5 %':d<0?'charge −10 %':'charge inchangée'}.`;
+     if(noRpe)note+=' RPE renseigné sur '+rp.length+' séance(s) sur '+logs.length+' : pas de hausse de charge sans RPE.';
+     // Réponse par discipline : écart relatif à la tendance globale, ±5 % par semaine, borné à ±15 %
+     const a14=iso(new Date(prev.getTime()-7*864e5)),adjList=[];
+     ['Natation','Vélo','Course'].forEach(sp=>{
+      const lg=workouts.filter(x=>x.date&&x.date>=a14&&x.date<=b&&planSport(x.sport)===sp),lw=logs.filter(x=>planSport(x.sport)===sp);
+      const pl=(get('planStart','')===st.last?plan:[]).filter(x=>x.sport===sp&&!x.event).reduce((t,x)=>t+(x.orig?x.orig.min:x.min),0);
+      if(lg.length<2||!pl)return;
+      const cS=lw.reduce((t,x)=>t+(x.duration||0),0)/pl,rr=lg.map(x=>parseFloat(x.rpe)).filter(v=>v>0),rS=rr.length?rr.reduce((t,v)=>t+v,0)/rr.length:5,ff=lg.map(x=>+x.feel).filter(v=>v>0),fS=ff.length?ff.reduce((t,v)=>t+v,0)/ff.length:null;
+      if(rr.length<Math.ceil(lg.length/2))return;
+      let dS=0;if(cS<0.6||rS>=8||(fS!=null&&fS>=4))dS=-0.10;else if(cS>=0.85&&rS<=6.5&&(fS==null||fS<=3))dS=0.05;
+      const rel=clamp(dS-d,-0.05,0.05);
+      if(rel){adj[sp]=clamp(+((adj[sp]||1)*(1+rel)).toFixed(3),0.85,1.15);adjList.push(`${sp} ${rel>0?'+5':'−5'} % (RPE ${rS.toFixed(1)}, ${lg.length} séances)`);}
+     });
+     if(adjList.length)note+=' Réponse par discipline : '+adjList.join(', ')+'.';
     }
    }
   }
  }else note='Première semaine de progression : niveau de charge à '+Math.round(level*100)+' %.';
- return {level,week,n,note,commit,state:{level,week,n,last:ws}};
+ return {level,week,n,note,commit,adj,state:{level,week,n,last:ws,adj}};
 }
 function renderProg(){
  const el=$('progInfo');if(!el)return;
  const st=get('prog',null);
  if(!st||typeof st.level!=='number'){el.innerHTML='<p class="muted">Pas encore démarrée : la charge démarre à 100 % au premier planning généré.</p>';return;}
- el.innerHTML=`<p>Charge actuelle : <strong>${Math.round(st.level*100)} %</strong></p>`+(st.last?`<p class="muted">Dernier planning généré : semaine ${st.week}/4 du cycle${st.week===4?' (récupération)':''}.</p>`:'');
+ el.innerHTML=`<p>Charge actuelle : <strong>${Math.round(st.level*100)} %</strong></p>`+(st.adj&&Object.keys(st.adj).some(k=>Math.abs(st.adj[k]-1)>0.004)?`<p class="muted">Réponse par discipline : ${['Natation','Vélo','Course'].filter(k=>st.adj[k]&&Math.abs(st.adj[k]-1)>0.004).map(k=>k+' '+Math.round(st.adj[k]*100)+' %').join(' · ')}</p>`:'')+(st.last?`<p class="muted">Dernier planning généré : semaine ${st.week}/4 du cycle${st.week===4?' (récupération)':''}.</p>`:'');
 }
 function nudgeLoad(d){const st=get('prog',null)||{level:1,week:1,n:0,last:null};st.level=clamp(+((typeof st.level==='number'?st.level:1)+d).toFixed(2),0.7,1.4);put('prog',st);renderProg();}
 function resetProg(){if(confirm('Réinitialiser la progression (charge à 100 %, cycle relancé) ?')){put('prog',null);renderProg();}}
@@ -529,15 +549,15 @@ function renderResume(){
  const el=$('resumeInfo');if(!el)return;const r=get('resume','');
  el.textContent=r?'Reprise le '+new Date(r+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})+' : charge à 65 % puis 80 %, sans séance de qualité.':'Aucune reprise programmée.';
 }
-function saveResume(){const v=$('resumeDate').value;if(!/^\d{4}-\d\d-\d\d$/.test(v)){alert('Choisis une date de reprise.');return;}put('resume',v);renderResume();alert('Reprise enregistrée : le prochain planning généré en tiendra compte.');}
+function saveResume(){const v=$('resumeDate').value;if(!/^\d{4}-\d\d-\d\d$/.test(v)){alert('Choisis une date de reprise.');return;}put('resume',v);renderResume();toast('Reprise enregistrée : le prochain planning généré en tiendra compte.');}
 function clearResume(){put('resume','');$('resumeDate').value='';renderResume();}
 // ---- Semaine type ----
-function saveTemplate(){saveAvailability(true);put('tpl',{slots,startTimes});put('availWeek',$('weekStart').value);alert('Semaine type enregistrée : elle sera rechargée chaque nouvelle semaine.');}
+function saveTemplate(){saveAvailability(true);put('tpl',{slots,startTimes});put('availWeek',$('weekStart').value);toast('Semaine type enregistrée : rechargée chaque nouvelle semaine.');}
 function loadTemplate(silent){
  const t=get('tpl',null);let ns=null,st=null;
  if(t&&validSlots(t.slots)){ns=t.slots;st=t.startTimes;}
  else if(t&&Array.isArray(t.availability)&&t.availability.length===7&&Array.isArray(t.daySports)&&t.daySports.length===7){ns=slotsFromLegacy(t.availability,t.daySports,t.bricks||[]);st=t.startTimes;}
- if(!ns){if(!silent)alert('Aucune semaine type enregistrée.');return;}
+ if(!ns){if(!silent)toast('Aucune semaine type enregistrée.');return;}
  slots=JSON.parse(JSON.stringify(ns));
  if(Array.isArray(st)&&st.length===7&&st.every(v=>/^\d\d:\d\d$/.test(v)))startTimes=st.slice();
  syncFromSlots();put('slots',slots);put('availability',availability);put('daySports',daySports);put('startTimes',startTimes);put('bricks',bricksFromSlots());
@@ -587,6 +607,36 @@ function renderCoach(){
 function saveCoach(){const t=$('coachNote').value.trim().slice(0,2000);if(!t){alert('Colle d’abord la consigne.');return;}put('coach',{text:t,date:iso(new Date())});renderCoach();}
 function clearCoach(){put('coach',null);$('coachNote').value='';renderCoach();}
 function coachSuffix(){const c=get('coach',null);return c&&c.text?'\n\nCONSIGNE DU COACH EN COURS (donnée le '+c.date+') :\n'+c.text:'';}
+// ---- Message discret (remplace les fenêtres de confirmation) ----
+function toast(msg){
+ try{
+  let el=document.getElementById('toast');
+  if(!el){el=document.createElement('div');el.id='toast';el.setAttribute('role','status');el.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));max-width:90%;background:#102a43;color:#fff;padding:10px 16px;border-radius:12px;font-size:14px;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,.25);opacity:0;transition:opacity .2s;pointer-events:none;text-align:center';document.body.appendChild(el);}
+  el.textContent=msg;el.style.opacity='1';clearTimeout(toast.t);toast.t=setTimeout(()=>{el.style.opacity='0';},3200);
+ }catch(e){}
+}
+// ---- Séances non placées : créneau suggéré en un geste ----
+function unplacedHtml(){
+ const L=get('unplaced',[]);if(!Array.isArray(L)||!L.length)return '';
+ return '<div class="warn" style="margin-bottom:10px"><strong>Pour placer ces séances</strong>'+L.map((u,i)=>`<div style="margin-top:8px">${esc(u.title)} (${u.min} min) : ajoute un créneau ${esc(u.sport==='Renforcement'?'Autre':u.sport)} de ${esc(durLbl(u.max))} le ${esc(days[u.day].toLowerCase())}.<div class="actions" style="margin-top:6px"><button class="secondary" onclick="addSuggestedSlot(${i})">Ajouter ce créneau</button></div></div>`).join('')+'</div>';
+}
+function addSuggestedSlot(i){
+ const L=get('unplaced',[]),u=L[i];if(!u)return;
+ if(slots[u.day].length>=3){toast('Ce jour a déjà 3 séances.');return;}
+ slots[u.day].push({sports:[u.sport],max:u.max,chain:false});slotChanged(u.day);
+ L.splice(i,1);put('unplaced',L);renderPlan();
+ toast('Créneau ajouté : touche « Générer mon planning » pour le prendre en compte.');
+}
+// ---- RPE manquant : pastilles 1 à 10 sur l'accueil ----
+function renderRpeBox(){
+ const card=$('rpeCard'),el=$('rpeBox');if(!card||!el)return;
+ const lim=new Date();lim.setDate(lim.getDate()-8);const li=iso(lim),todo=[];
+ workouts.forEach((w,i)=>{if(w.date&&w.date>=li&&!(parseFloat(w.rpe)>0)&&(w.duration||0)>=15)todo.push(i);});
+ if(!todo.length){card.style.display='none';return;}
+ card.style.display='';
+ el.innerHTML='<p class="muted">Sans RPE, la charge de la semaine prochaine ne peut pas augmenter. Touche la note de l’effort (1 facile, 10 maximal).</p>'+todo.slice(0,3).map(i=>{const w=workouts[i];return `<div style="margin:10px 0"><strong>${esc(w.sport||'Séance')}</strong> · ${esc(w.date)} · ${w.duration||'?'} min<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px">${[1,2,3,4,5,6,7,8,9,10].map(n=>`<button class="secondary" style="min-height:0;padding:6px 10px" onclick="setRpeQuick(${i},${n})">${n}</button>`).join('')}</div></div>`;}).join('')+(todo.length>3?`<p class="hint">${todo.length-3} autre(s) séance(s) sans RPE dans l’historique.</p>`:'');
+}
+function setRpeQuick(i,n){if(workouts[i]){workouts[i].rpe=String(n);put('history',workouts);renderHistory();renderRpeBox();toast('RPE '+n+' enregistré.');}}
 function generatePlan(){
  const warns=saveAvailability(true);
  const ws=$('weekStart').value,target=curTarget(),rawFocus=$('focus').value;
@@ -610,7 +660,7 @@ function generatePlan(){
  const lvl=(ri&&(ri.key==='taper'||ri.key==='race'))?Math.min(pr.level,1):pr.level;
  const cyc=phaseWeeks?CYCLE[pr.week-1]:null;                   // INTRO, LOAD, OVERREACH ou RECOVERY
  const f=rp?rp.f:focus==='recovery'?1:lvl*(ri?ri.pf:1)*(cyc?cyc.f:1);
- const fOf=sp=>f*((ri&&ri.mul&&ri.mul[sp])||1);                 // facteur par discipline (affûtage : nage maintenue, vélo réduit)
+ const fOf=sp=>f*((ri&&ri.mul&&ri.mul[sp])||1)*((phaseWeeks&&!rp&&focus!=='recovery'&&pr.adj&&pr.adj[sp])||1);                 // facteur par discipline (affûtage : nage maintenue, vélo réduit)
  const tests=(focus==='recovery'||rp)?[]:dueTestsFor(ws,ri?ri.key:null,rec);
  // Phase spécifique : un enchaînement vélo-course chaque semaine si l'utilisateur n'en a pas réglé
  const raceBrick=!rp&&!!(ri&&(ri.key==='spec'||(ri.key==='taper'&&ri.wr===1)));   // enchaînement avec une course à l'allure semi
@@ -623,7 +673,7 @@ function generatePlan(){
  const buildFit=mk=>{const sp=mk(f).sport;let ff=+fOf(sp).toFixed(2),s=mk(ff);while(s.min>maxSlot(s.sport)&&ff>0.5){ff=+(ff-0.05).toFixed(2);s=mk(ff);}return {...s,mk,fs:fOf(sp)};};
  const pri=x=>x.long?3:x.quality?2:1;
  const pool=buildCatalog(focus,pr.n,rec,{phase:ri?ri.key:null,tests,wr:ri?ri.wr:null}).map(buildFit).filter(x=>!(rp&&(x.quality||x.long))).sort((a,b)=>pri(b)-pri(a)||b.min-a.min);
- const dayUsed=days.map(()=>0),result=[],notPlaced=[];
+ const dayUsed=days.map(()=>0),result=[],notPlaced=[],unplaced=[];
  let planned=0;
  const brickDays=new Set();
  const fits=(it,d)=>avail[d]-dayUsed[d]>=it.min&&daySports[d].includes(it.sport)&&!(it.sport==='Course'&&brickDays.has(d))&&daySlots[d].some(sl=>!sl.used&&sl.sports.includes(it.sport)&&sl.max>=it.min); // le jour d'un enchaînement, la course est celle de l'enchaînement
@@ -654,7 +704,7 @@ function generatePlan(){
   const attempt=s=>{if(planned+s.min>cap)return null;const c=days.map((_,d)=>d).filter(d=>fits(s,d));return c.length?{s,c}:null;};
   let ok=attempt(it);
   if(!ok&&it.mk){let ff=it.fs||f;while(!ok&&ff>0.55){ff=+(ff-0.05).toFixed(2);const s=it.mk(ff);if(s.min>=it.min)continue;ok=attempt({...s,mk:it.mk});}}
-  if(!ok){notPlaced.push(planned+it.min>cap?`${it.title} (${it.min} min) : volume cible atteint`:`${it.title} (${it.min} min) : aucun jour avec assez de temps et ce sport autorisé`);continue;}
+  if(!ok){const capHit=planned+it.min>cap;notPlaced.push(capHit?`${it.title} (${it.min} min) : volume cible atteint`:`${it.title} (${it.min} min) : aucun jour avec assez de temps et ce sport autorisé`);if(!capHit)unplaced.push({sport:it.sport,min:it.min,title:it.title,hard:!!(it.quality||it.long)});continue;}
   it=ok.s;const cands=ok.c;
   const score=d=>{
    const here=result.filter(r=>r.day===d);
@@ -683,6 +733,16 @@ function generatePlan(){
  if(ri)notes.unshift(`Phase ${ri.name.toLowerCase()}${ri.k?` (semaine ${ri.k}/${ri.N})`:''} : ${ri.obj}`);
  if(debloDay!=null)notes.push('Veille de course : déblocage court (vélo, natation et course) pour garder les jambes vives.');
  if(tests.length)notes.push(`Semaine de tests : ${tests.map(t=>TEST_LABEL[t]).join(', ')}. Saisis les résultats dans Profil > Tests pour mettre à jour tes zones.`);
+ {const sug=[],used2=dayUsed.slice(),hardDay=d=>result.some(y=>y.day===d&&(y.quality||y.long));
+  unplaced.forEach(u=>{
+   const need=DUR.find(v=>v>=u.min)||240;
+   const cand=days.map((_,d)=>d).filter(d=>slots[d].length<3&&!(slots[d].length>0&&avail[d]===0)&&!(rp&&iso(new Date(mondayOf(ws).getTime()+d*864e5))<rp.date));
+   if(!cand.length)return;
+   const sc=d=>used2[d]+(u.hard&&(hardDay(d)||hardDay(d-1)||hardDay(d+1))?1000:0)+slots[d].length*20;
+   cand.sort((a,b)=>sc(a)-sc(b));
+   const d=cand[0];used2[d]+=u.min;sug.push({day:d,sport:u.sport,max:need,min:u.min,title:u.title});
+  });
+  put('unplaced',sug);}
  if(notPlaced.length)notes.push('Séances non placées : '+notPlaced.join(' ; ')+'.');
  if(planned<cap*0.85&&(!ri||phaseWeeks))notes.push(`Volume planifié : ${(planned/60).toFixed(1)} h sur ${(cap/60).toFixed(1)} h de créneaux. La charge monte au fil des semaines si tes séances sont bien réalisées.`);
  {const PM=get('planMin',{}),mw=iso(mondayOf(ws)),pw=(()=>{const q=mondayOf(ws);q.setDate(q.getDate()-7);return iso(q);})();
@@ -703,7 +763,8 @@ function renderPlan(){
  const ps=get('planStart','');
  const stale=ps&&ps<iso(mondayOf())?`<div class="warn" style="margin-bottom:10px">Ce planning date de la semaine du ${esc(mondayOf(ps).toLocaleDateString('fr-FR',{day:'numeric',month:'long'}))}. Génère-en un nouveau pour la semaine en cours.</div>`:'';
  const notes=get('planNotes',[]);
- const notesHtml=Array.isArray(notes)&&notes.length?`<div class="warn" style="margin-bottom:10px">${notes.map(esc).join('<br>')}</div>`:'';
+ let notesHtml=Array.isArray(notes)&&notes.length?`<div class="warn" style="margin-bottom:10px">${notes.map(esc).join('<br>')}</div>`:'';
+ notesHtml+=unplacedHtml();
  const miss=[];
  if(plan.some(x=>needsProfile(x,'Natation'))&&!curCSS())miss.push('Renseigne ta vitesse max au 100 m dans le profil pour obtenir des allures cibles en natation.');
  if(plan.some(x=>needsProfile(x,'Course'))&&!curRunHM())miss.push('Renseigne ton allure cible du semi dans le profil pour obtenir des allures cibles en course à pied.');
@@ -712,7 +773,7 @@ function renderPlan(){
  const doneHtml=nDone?`<div class="hint" style="margin-bottom:10px">Réalisé : <strong>${nDone}/${plan.length}</strong> séances, ${doneMin} min sur ${plan.reduce((a,x)=>a+x.min,0)} min prévues.</div>`:'';
  el.innerHTML=stale+phaseBannerHtml()+notesHtml+missHtml+doneHtml+days.map((d,i)=>{
   const p=plan.filter(x=>x.day===i),dl=dayLabel(i);
-  return `<div style="margin:8px 0"><strong>${d}</strong>${dl?` <span class="muted">· ${esc(dl)}</span>`:''}${p.length?p.map(x=>`<div class="session"><span class="pill">${esc(x.sport)}</span><strong>${esc(x.title)}${x.event?'':' · '+x.min+' min'}</strong>${zoneTarget(x.sport,x.zone)?`<p class="muted" style="margin:2px 0 0">Cible : ${esc(zoneTarget(x.sport,x.zone))}</p>`:''}<p>${esc(fillZones(x.sport,x.desc))}</p><small>Intensité : ${esc(x.intensity)} · Séance indicative${x.adapted?' · <strong style="color:var(--orange)">adaptée à ton bilan</strong>':''}</small>${doneMap[plan.indexOf(x)]?`<p style="margin:6px 0 0;color:var(--green);font-weight:600">✔ Réalisée : ${doneMap[plan.indexOf(x)].duration} min (prévu ${x.min})${doneMap[plan.indexOf(x)].shifted?' · un autre jour':''}${doneExtra(doneMap[plan.indexOf(x)])}</p>`:''}${anaHtml(plan.indexOf(x),x,doneMap[plan.indexOf(x)])}${(x.event||x.opener||doneMap[plan.indexOf(x)])?'':`<div class="actions" style="margin-top:6px"><button class="secondary" onclick="skipSession(${plan.indexOf(x)})">Je n’ai pas pu</button></div>`}</div>`).join(''):'<p class="muted">Repos / récupération</p>'}</div>`;
+  return `<div style="margin:8px 0"><strong>${d}</strong>${dl?` <span class="muted">· ${esc(dl)}</span>`:''}${p.length?p.map(x=>`<div class="session"><span class="pill">${esc(x.sport)}</span><strong>${esc(x.title)}${x.event?'':' · '+x.min+' min'}</strong>${zoneTarget(x.sport,x.zone)?`<p class="muted" style="margin:2px 0 0">Cible : ${esc(zoneTarget(x.sport,x.zone))}</p>`:''}<p>${esc(fillZones(x.sport,x.desc))}</p>${fuelHtml(x)}<small>Intensité : ${esc(x.intensity)} · Séance indicative${x.adapted?' · <strong style="color:var(--orange)">adaptée à ton bilan</strong>':''}</small>${doneMap[plan.indexOf(x)]?`<p style="margin:6px 0 0;color:var(--green);font-weight:600">✔ Réalisée : ${doneMap[plan.indexOf(x)].duration} min (prévu ${x.min})${doneMap[plan.indexOf(x)].shifted?' · un autre jour':''}${doneExtra(doneMap[plan.indexOf(x)])}</p>`:''}${anaHtml(plan.indexOf(x),x,doneMap[plan.indexOf(x)])}${(x.event||x.opener||doneMap[plan.indexOf(x)])?'':`<div class="actions" style="margin-top:6px"><button class="secondary" onclick="skipSession(${plan.indexOf(x)})">Je n’ai pas pu</button></div>`}</div>`).join(''):'<p class="muted">Repos / récupération</p>'}</div>`;
  }).join('');
  home.innerHTML=stale+plan.map(x=>`<div>• <strong>${days[x.day]}</strong> : ${esc(x.title)} (${x.min} min)</div>`).join('');
  renderToday();
@@ -733,9 +794,9 @@ function copyText(t,okMsg,promptMsg){
   document.body.appendChild(ta);ta.select();ta.setSelectionRange(0,t.length);
   let ok=false;try{ok=document.execCommand('copy');}catch(e){}
   ta.remove();
-  if(ok)alert(okMsg);else prompt(promptMsg,t);
+  if(ok)toast(okMsg);else prompt(promptMsg,t);
  };
- if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(t).then(()=>alert(okMsg)).catch(legacy);}
+ if(navigator.clipboard&&window.isSecureContext){navigator.clipboard.writeText(t).then(()=>toast(okMsg)).catch(legacy);}
  else legacy();
 }
 function copyPlan(){if(!plan.length){alert('Génère d’abord ton planning.');return;}copyText(planText(),'Planning copié.','Copie le planning :');}
@@ -751,7 +812,7 @@ function updateReadiness(){
  $('readiness').textContent=msg+(wf.length?' Signaux de ta montre : '+wf.join(' ; ')+'.':'');
  renderToday();
 }
-function saveReadiness(){put('readiness',{date:iso(new Date()),sleep:$('sleep').value,fatigue:$('fatigue').value,feeling:$('feeling').value,time:$('todayTime').value});{const RL=get('rdLog',{});RL[iso(new Date())]={lvl:readinessState().level,sleep:$('sleep').value,fatigue:$('fatigue').value,feeling:$('feeling').value};Object.keys(RL).sort().slice(0,-60).forEach(k=>delete RL[k]);put('rdLog',RL);}renderRdLog();alert('Bilan du jour enregistré.');}
+function saveReadiness(){put('readiness',{date:iso(new Date()),sleep:$('sleep').value,fatigue:$('fatigue').value,feeling:$('feeling').value,time:$('todayTime').value});{const RL=get('rdLog',{});RL[iso(new Date())]={lvl:readinessState().level,sleep:$('sleep').value,fatigue:$('fatigue').value,feeling:$('feeling').value};Object.keys(RL).sort().slice(0,-60).forEach(k=>delete RL[k]);put('rdLog',RL);}renderRdLog();toast('Bilan du jour enregistré.');}
 
 // ---- Bilan du jour → séance du jour ----
 // Niveaux : rest (0 min dispo), red, amber, soft (fatigue modérée seule), green
@@ -811,9 +872,11 @@ function renderBackup(){
  const hasData=workouts.length>0||plan.length>0||get('ftp',null)!=null;
  if(age==null&&!hasData){el.innerHTML='';return;}
  const when=age==null?'jamais':age===0?'aujourd’hui':age===1?'hier':'il y a '+age+' jours';
- el.innerHTML=(age==null||age>=7)
-  ?`<div class="warn" style="margin:0 0 12px"><strong>Dernière sauvegarde : ${when}.</strong> Tes données restent sur cet appareil et cette adresse : une sauvegarde évite de tout perdre.<div class="actions" style="margin-top:8px"><button class="primary" onclick="exportData()">Sauvegarder maintenant</button></div></div>`
-  :`<div class="card" style="padding:10px 15px;display:flex;justify-content:space-between;align-items:center;gap:10px"><span class="muted">Dernière sauvegarde : ${when}</span><button class="secondary" onclick="exportData()">Sauvegarder</button></div>`;
+ const hint=(window.navigator.standalone===true||(window.matchMedia&&matchMedia('(display-mode: standalone)').matches))?'':'<p class="hint" style="margin:0 0 12px">Pour mieux protéger tes données : Partager → « Sur l’écran d’accueil ». Attention, l’app installée a son propre stockage : sauvegarde d’abord, puis restaure la sauvegarde dans l’app installée (et colle à nouveau ta clé intervals.icu).</p>';
+ let box=(age==null||age>=7)
+  ?`<div class="warn" style="margin:0 0 12px"><strong>Dernière sauvegarde : ${when}.</strong> Tes données restent sur cet appareil et cette adresse : une sauvegarde évite de tout perdre.<div class="actions" style="margin-top:8px"><button class="primary" onclick="exportData()">Sauvegarder maintenant</button><button class="secondary" onclick="exportData(true)">Partager</button></div></div>`
+  :`<div class="card" style="padding:10px 15px;display:flex;justify-content:space-between;align-items:center;gap:10px"><span class="muted">Dernière sauvegarde : ${when}</span><span style="display:flex;gap:8px"><button class="secondary" onclick="exportData()">Sauvegarder</button><button class="secondary" onclick="exportData(true)">Partager</button></span></div>`;
+ el.innerHTML=box+hint;
 }
 // « Fait » depuis la fin de la semaine en cours (séance du plan précédent)
 // « Importer ma séance » : récupère les séances d’intervals.icu ; sans clé, saisie manuelle de secours
@@ -891,9 +954,9 @@ function freeParse(raw,sport){
  }
  if(!secs.length)return {text:'',notes:notes.length?notes:['Aucune étape reconnue : écris une durée (10 min) ou une distance (400 m) par étape.'],total:0};
  if(zoneUsed)notes.push(sport==='Vélo'?'Zones converties en % de ta FTP (réglée dans intervals.icu).':'Zones converties en allures chiffrées (profil de l’app, sinon zones d’allure d’intervals.icu).');
- let total=0,hasDist=false;secs.forEach(sc=>sc.items.forEach(it=>{if(it.km||it.mtr)hasDist=true;const sec=it.rest?it.sec:it.min?it.min*60:it.sec||0;total+=sec*sc.reps;}));
+ let total=0,hasDist=false,est=0;secs.forEach(sc=>sc.items.forEach(it=>{const dm=it.km?it.km*1000:it.mtr||0;if(dm)hasDist=true;const sec=it.rest?it.sec:it.min?it.min*60:it.sec||0;total+=sec*sc.reps;est+=(dm?dm*({Natation:1.2,Course:0.33,Vélo:0.133}[sport]||0.3):sec)*sc.reps;}));
  const out=[];secs.forEach(sc=>{out.push(sc.reps>1?`${sc.name} ${sc.reps}x`:sc.name);sc.items.forEach(it=>out.push(freeStepText(sport,it)));out.push('');});
- return {text:out.join('\n').trim(),notes,total:hasDist?0:Math.round(total/60)};
+ return {text:out.join('\n').trim(),notes,total:hasDist?0:Math.round(total/60),secs,est:Math.round(est/60)};
 }
 function freeBuild(){
  const raw=$('garminText').value.trim();
@@ -912,15 +975,56 @@ async function freeSend(){
  const key=$('icuKey').value.trim();
  if(!key){alert('Colle d’abord ta clé API intervals.icu (carte « Envoi direct vers intervals.icu », plus haut).');return;}
  const d=$('freeDate').value||iso(new Date()),t=/^\d\d:\d\d$/.test($('freeTime').value)?$('freeTime').value:'18:30';
- const body=[{category:'WORKOUT',start_date_local:`${d}T${t}:00`,type:ICU_TYPE[$('freeSport').value],name:$('freeTitle').value.trim()||'Séance libre',description:r.text,external_id:'coach-libre-'+Date.now()}];
+ const extId='coach-libre-'+Date.now();
+ const body=[{category:'WORKOUT',start_date_local:`${d}T${t}:00`,type:ICU_TYPE[$('freeSport').value],name:$('freeTitle').value.trim()||'Séance libre',description:r.text,external_id:extId}];
  st('Envoi en cours…');
  try{
   const res=await fetch(ICU_API+'?upsert=true',{method:'POST',headers:{'Authorization':'Basic '+btoa('API_KEY:'+key),'Content-Type':'application/json'},body:JSON.stringify(body)});
   if(res.status===401||res.status===403){st('Clé refusée par intervals.icu (HTTP '+res.status+').');return;}
   if(!res.ok){st('intervals.icu a répondu une erreur (HTTP '+res.status+') : utilise « Copier le texte ».');return;}
-  st('Séance envoyée dans ton calendrier intervals.icu le '+d+'. Elle part vers Garmin Connect si « Upload planned workouts » est coché dans les réglages Garmin d’intervals.icu.');
+  st('Séance envoyée dans ton calendrier intervals.icu le '+d+'. '+freeAddPlan(r,d,t,extId)+' Elle part vers Garmin Connect si « Upload planned workouts » est coché dans les réglages Garmin d’intervals.icu.');
  }catch(e){st('Envoi impossible depuis le navigateur (réseau ou restriction CORS) : utilise « Copier le texte ».');}
 }
+// ---- Séance libre ajoutée à « Ma semaine » ----
+function freeDesc(secs,sport){
+ const dstr=it=>it.km?it.km+' km':it.mtr?it.mtr+' m':(it.sec&&it.sec%60===0)?(it.sec/60)+' min':it.sec?it.sec+' s':it.min+' min';
+ const lbl=it=>dstr(it)+(it.raw?' '+it.raw:it.z?' '+it.z:'');
+ return secs.map(sc=>{
+  const parts=sc.items.filter(it=>!it.rest).map(lbl),rest=sc.items.find(it=>it.rest);
+  const core=sc.reps>1?sc.reps+' × '+parts.join(' + ')+(rest?', récup '+(rest.sec>=60&&rest.sec%60===0?rest.sec/60+' min':rest.sec+' s'):''):parts.join(' + ');
+  return (sc.name==='Warmup'?'Échauffement : ':sc.name==='Cooldown'?'Retour au calme : ':'')+core;
+ }).join(' · ');
+}
+function freeAddPlan(r,d,t,extId){
+ const ps=get('planStart','');
+ if(!ps||!plan.length)return 'Génère d’abord ta semaine pour l’ajouter à « Ma semaine ».';
+ const di=Math.round((new Date(d+'T12:00:00')-mondayOf(ps))/864e5);
+ if(di<0||di>6)return 'Hors de la semaine affichée : non ajoutée à « Ma semaine ».';
+ const sport=$('freeSport').value;
+ const it={sport,title:$('freeTitle').value.trim()||'Séance libre',min:r.est||r.total||60,desc:r.secs?freeDesc(r.secs,sport):r.text,intensity:'Libre',zone:'',day:di,free:true,extId,time:t};
+ if(r.secs&&sport!=='Renforcement')it.steps=r.secs;
+ plan.push(it);put('plan',plan);renderPlan();refreshStats();
+ return 'Ajoutée à « Ma semaine » ('+days[di].toLowerCase()+').';
+}
+function freeAdd(){
+ const r=freePreview();if(!r||!r.text)return;
+ const d=$('freeDate').value||iso(new Date()),t=/^\d\d:\d\d$/.test($('freeTime').value)?$('freeTime').value:'18:30',e=$('freeStatus');
+ if(e)e.textContent=freeAddPlan(r,d,t,'coach-libre-'+Date.now())+' Elle partira vers intervals.icu avec « Envoyer la semaine ».';
+}
+// ---- Ravitaillement des séances longues (repères généraux, à ajuster à la tolérance digestive) ----
+function fuelFor(x){
+ if(!x||x.event||x.opener||(x.sport!=='Vélo'&&x.sport!=='Course')||x.min<75)return null;
+ const ri=raceInfo(get('planStart','')||$('weekStart').value),ph=ri?ri.key:null;
+ const L={base:[40,50],build:[50,60],spec:[60,75],taper:[50,60],race:[60,75]}[ph]||[50,60];
+ let lo=L[0],hi=L[1];
+ if(x.min<120){lo=Math.min(lo,40);hi=Math.min(hi,50);}
+ if(x.sport==='Course'){hi=Math.min(hi,60);lo=Math.min(lo,hi);}
+ const h=x.min/60,r5=v=>Math.round(v/5)*5;
+ return {lo,hi,t0:r5(lo*h),t1:r5(hi*h),ml:x.min>=150?'600–750':'500–600',race:ph==='spec'&&x.min>=120};
+}
+const fuelTxt=f=>`${f.lo}–${f.hi} g de glucides/h (≈ ${f.t0}–${f.t1} g au total), ${f.ml} ml/h.`+(f.race?' Teste ici le gel et la boisson de course.':'');
+function fuelLine(x){const f=fuelFor(x);return f?'\nRavitaillement (repères généraux) : '+fuelTxt(f):'';}
+function fuelHtml(x){const f=fuelFor(x);return f?`<p class="muted" style="margin:4px 0 0"><strong>Ravitaillement</strong> : ${esc(fuelTxt(f))}</p>`:'';}
 function logQuick(sport,min){
  $('logDate').value=iso(new Date());$('sport').value=sport==='Course'?'Course à pied':sport;$('duration').value=min;
  showTab('log');{const dm=$('manualLog');if(dm)dm.open=true;}setTimeout(()=>{try{$('rpe').focus({preventScroll:true});}catch(e){}},400);
@@ -947,6 +1051,7 @@ function missingHtml(){
  return `<div class="warn" style="margin-top:12px"><strong>${m.length} donnée${m.length>1?'s':''} à renseigner</strong>${m.map(o=>`<div style="margin-top:8px">${esc(o.txt)} : ${esc(o.eff)}.<div class="actions" style="margin-top:6px">${o.field==='swimMax'||o.field==='runHM'||o.field==='ftp'?`<input id="q_${o.field}" inputmode="numeric" placeholder="${o.field==='swimMax'?'1:30':o.field==='ftp'?'180':'5:30'}" style="max-width:100px"><button class="primary" onclick="quickSave('${o.field}')">Enregistrer</button>`:''}<button class="secondary" onclick="goProfile('${o.field}')">Renseigner</button><button class="secondary" onclick="goTest('${o.test}')">Faire le test</button></div></div>`).join('')}</div>`;
 }
 function renderToday(){
+ try{renderRpeBox();}catch(e){}
  const box=$('todayBox');if(!box)return;
  const cur=iso(mondayOf()),ps=get('planStart',''),idx=(new Date().getDay()+6)%7,missing=missingHtml();
  const fmt=d=>d.toLocaleDateString('fr-FR',{day:'numeric',month:'long'});
@@ -974,7 +1079,7 @@ function renderToday(){
   const base=x.orig||x,p=proposeFor(base,st),dn=doneMap[i];
   const same=!!p&&p.title===x.title&&p.min===x.min;
   const tgt=zoneTarget(x.sport,x.zone);
-  let out=`<div class="session"><span class="pill">${esc(x.sport)}</span><strong>${esc(x.title)} · ${x.min} min</strong>${tgt?`<p class="muted" style="margin:2px 0 0">Cible : ${esc(tgt)}</p>`:''}<p>${esc(fillZones(x.sport,x.desc))}</p><small>Intensité : ${esc(x.intensity)}${x.adapted?' · <strong style="color:var(--orange)">adaptée à ton bilan</strong>':''}</small>`;
+  let out=`<div class="session"><span class="pill">${esc(x.sport)}</span><strong>${esc(x.title)} · ${x.min} min</strong>${tgt?`<p class="muted" style="margin:2px 0 0">Cible : ${esc(tgt)}</p>`:''}<p>${esc(fillZones(x.sport,x.desc))}</p>${fuelHtml(x)}<small>Intensité : ${esc(x.intensity)}${x.adapted?' · <strong style="color:var(--orange)">adaptée à ton bilan</strong>':''}</small>`;
   if(dn)out+=`<p style="margin:6px 0 0;color:var(--green);font-weight:600">✔ Réalisée : ${dn.duration} min (prévu ${x.min})</p>`;
   out+='</div>';
   if(!dn){
@@ -1007,7 +1112,7 @@ const sm=$('swimMax').value.trim(),rh=$('runHM').value.trim();
  put('ftp',ftp);put('swim',+$('swimBase').value);put('run',+$('runBase').value);put('swimMax',$('swimMax').value);put('runHM',$('runHM').value);put('hrThr',+$('hrThr').value||0);put('swimCss',$('swimCss').value);put('raceDay',$('raceDay').value);
  if($('raceDay').value)$('raceDate').value=fr(new Date($('raceDay').value+'T12:00:00'),{day:'numeric',month:'long',year:'numeric'});
  put('raceGoal',$('raceGoal').value);put('raceDate',$('raceDate').value);
- renderZones();refreshStats();renderRace();renderTests();alert('Profil enregistré.');
+ renderZones();refreshStats();renderRace();renderTests();toast('Profil enregistré.');
 }
 function renderZones(){
  const ftp=curFtp();
@@ -1042,10 +1147,10 @@ function renderHistory(){try{refreshStats();}catch(e){}
 }
 function clearHistory(){if(confirm('Effacer tout l’historique enregistré sur cet appareil ?')){workouts=[];put('history',workouts);renderHistory();}}
 
-function exportData(){
- const data={version:'2.4.0',exportedAt:new Date().toISOString(),availability,daySports,bricks:get('bricks',[]),focus:get('focus','balanced'),weekStart:get('weekStart',''),plan,planStart:get('planStart',''),history:workouts,
+function exportData(share){
+ const data={version:'2.9.0',exportedAt:new Date().toISOString(),availability,daySports,bricks:get('bricks',[]),focus:get('focus','balanced'),weekStart:get('weekStart',''),plan,planStart:get('planStart',''),history:workouts,
   profile:{ftp:get('ftp',180),target:get('target',8),swim:get('swim',2000),run:get('run',50),swimMax:get('swimMax',''),runHM:get('runHM',''),hrThr:get('hrThr',0),swimCss:get('swimCss',''),raceDay:get('raceDay',''),raceGoal:get('raceGoal',''),raceDate:get('raceDate','')},readiness:get('readiness',{}),prog:get('prog',null),analyses:get('analyses',{}),feel:get('feel',{}),startTimes,calAlarm:get('calAlarm',30),calEmail:get('calEmail',''),tests:get('tests',[]),testsOn:get('testsOn',true),wellness:get('wellness',{}),resume:get('resume',''),tpl:get('tpl',null),rdLog:get('rdLog',{}),coach:get('coach',null),skipped:get('skipped',null),slots:get('slots',null)};
- download('mon-coach-half-donnees.json',JSON.stringify(data,null,2),'application/json');
+ download('mon-coach-half-donnees.json',JSON.stringify(data,null,2),'application/json',share===true);
  put('lastBackup',new Date().toISOString());renderBackup();
 }
 // ---- Restauration d'une sauvegarde (fichier JSON exporté par l'app) ----
@@ -1073,9 +1178,9 @@ function importBackup(inp){
 }
 
 // Le lien doit être dans la page et l'URL ne doit pas être révoquée tout de suite (sinon échec sur Safari/iOS)
-function download(name,content,type){
+function download(name,content,type,forceShare){
  // Application ajoutée à l'écran d'accueil (iOS) : les téléchargements par lien sont peu fiables, on passe par le partage
- if(window.navigator.standalone&&navigator.canShare){
+ if((window.navigator.standalone||forceShare)&&navigator.canShare){
   try{const f=new File([content],name,{type:String(type).split(';')[0]});if(navigator.canShare({files:[f]})){navigator.share({files:[f]}).catch(()=>{});return;}}catch(e){}
  }
  const blob=new Blob([content],{type}),url=URL.createObjectURL(blob),a=document.createElement('a');
@@ -1099,9 +1204,9 @@ const icuIntensity=(sport,z,it)=>sport==='Vélo'?(it.ramp?'ramp 50-70%':ICU_BIKE
 function icuStep(sport,it){
  if(it.rest)return `- ${it.sec}s intensity=rest`;
  // en natation « m » peut être lu comme des mètres : les durées y sont donc écrites en secondes
- const d=it.mtr?`${it.mtr}mtr`:it.sec?`${it.sec}s`:(sport==='Natation'?`${it.min*60}s`:`${it.min}m`);
+ const d=it.km?`${it.km}km`:it.mtr?`${it.mtr}mtr`:it.sec?`${it.sec}s`:(sport==='Natation'?`${it.min*60}s`:`${it.min}m`);
  if(it.free)return `- ${it.cue?it.cue+' ':''}${d} freeride`;
- return `- ${it.cue?it.cue+' ':''}${d} ${icuIntensity(sport,it.z,it)}`;
+ return `- ${it.cue?it.cue+' ':''}${d} ${it.raw||icuIntensity(sport,it.z,it)}`;
 }
 function icuText(x){
  if(!x.steps)return fillZones(x.sport,x.desc); // renforcement ou ancien planning : description seule
@@ -1593,7 +1698,7 @@ function applyTest(opt){
  pendingTest=null;
  ['ftpRes','cssRes','runRes'].forEach(id=>{const e=$(id);if(e)e.textContent='';});
  renderZones();renderTests();renderTrends();renderRace();
- alert('Test enregistré : tes zones sont mises à jour.');
+ toast('Test enregistré : tes zones sont mises à jour.');
 }
 
 // ---- Évolution des indicateurs ----
@@ -1868,9 +1973,9 @@ function calEvents(){
   let t=h*60+m;
   const list=plan.filter(x=>x.day===d&&!x.event);
   list.forEach((x,k)=>{
-   const tg=zoneTarget(x.sport,x.zone);
-   out.push({item:x,uid:`half-${key}-${d}-${k}@moncoachhalf`,d,day,start:t,end:t+x.min,short:x.title,title:`${x.title} (${x.min} min)`,
-    desc:fillZones(x.sport,x.desc)+(tg?'\nCible : '+tg:'')+'\nIntensité : '+x.intensity+'\nSéance indicative, à adapter aux sensations.'});
+   const tg=zoneTarget(x.sport,x.zone);if(/^\d\d:\d\d$/.test(x.time||'')){const [hh,mm]=x.time.split(':').map(Number);t=hh*60+mm;}
+   out.push({item:x,uid:x.extId||`half-${key}-${d}-${k}@moncoachhalf`,d,day,start:t,end:t+x.min,short:x.title,title:`${x.title} (${x.min} min)`,
+    desc:fillZones(x.sport,x.desc)+(tg?'\nCible : '+tg:'')+fuelLine(x)+'\nIntensité : '+x.intensity+'\nSéance indicative, à adapter aux sensations.'});
    const next=list[k+1],brick=x.sport==='Vélo'&&next&&next.title==='Enchaînement vélo-course';
    t+=x.min+(brick?5:15); // enchaînement : transition courte ; sinon 15 min entre deux séances
   });
@@ -1929,6 +2034,14 @@ function showGoogleLinks(){
   calEvents().map(ev=>`<p><a href="${esc(gcalUrl(ev,email))}" target="_blank" rel="noopener">${esc(days[ev.d].slice(0,3))} ${esc(ev.day.toLocaleDateString('fr-FR',{day:'numeric',month:'short'}))} · ${hhmm(ev.start)} · ${esc(ev.short)}</a></p>`).join('');
 }
 
+// Usage hors ligne : le service worker sert la dernière version connue seulement sans réseau
+if('serviceWorker' in navigator&&/^https?:/.test(location.protocol)){
+ window.addEventListener('load',()=>{
+  navigator.serviceWorker.register('sw.js').then(reg=>{
+   reg.addEventListener('updatefound',()=>{const nw=reg.installing;if(nw)nw.addEventListener('statechange',()=>{if(nw.state==='installed'&&navigator.serviceWorker.controller)toast('Nouvelle version prête : ferme puis rouvre l’app.');});});
+  }).catch(()=>{});
+ });
+}
 init();
 if(get('icuKey',null)&&get('icuAuto',true))setTimeout(()=>{importFromIntervals('icuImportStatus',true);importWellness('wellStatus',true);},400);
 </script>

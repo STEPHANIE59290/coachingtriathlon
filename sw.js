@@ -1,7 +1,7 @@
 // Service worker de Mon Coach Half : usage hors ligne SANS jamais figer une ancienne version.
+// Ce fichier ne change plus d'une version à l'autre : seul index.html est remplacé à chaque mise à jour.
 // Pages : réseau d'abord (toujours la dernière version), cache seulement en secours (hors ligne ou réseau lent).
-const VERSION = '2.13.0';
-const CACHE = 'mon-coach-half-' + VERSION;
+const CACHE = 'mon-coach-half-cache';
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './apple-touch-icon.png', './icon-192.png', './icon-512.png', './icon-maskable-512.png'];
 
 self.addEventListener('install', e => {
@@ -21,6 +21,16 @@ self.addEventListener('fetch', e => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return; // intervals.icu et tout service externe : jamais interceptés
+  if (url.searchParams.has('chk') || req.headers.has('range')) return; // vérification de version : toujours directe
+
+  // config.js (adresse et clé publique du compte en ligne) : réseau d'abord, copie en secours hors ligne
+  if (url.pathname.endsWith('/config.js')) {
+    e.respondWith(fetch(req.url, { cache: 'no-store' }).then(r => {
+      if (r.ok) { const cp = r.clone(); caches.open(CACHE).then(c => c.put(req, cp)); }
+      return r;
+    }).catch(() => caches.match(req)));
+    return;
+  }
 
   if (req.mode === 'navigate' || url.pathname.endsWith('/index.html') || url.pathname.endsWith('/')) {
     e.respondWith((async () => {

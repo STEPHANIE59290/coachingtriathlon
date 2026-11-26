@@ -1,0 +1,34 @@
+{
+ "normal": {
+  "path": "af00f5eaac78",
+  "vol": "7e19e43b04da",
+  "blk": "e8ddff97f27d",
+  "fit": "2630856c0e68",
+  "wkBilan": "",
+  "raceInfo": "87fe7304d88d",
+  "level": 1.05,
+  "note": "Bilan de la semaine précédente : 120 min réalisées sur 120 prévues (100 %), RPE moyen 5.0 → charge +5 %.",
+  "todo": [
+   "Test de seuil à planifier (vélo, natation, course)",
+   "Sauvegarder mes données",
+   "Générer la semaine"
+  ],
+  "errors": []
+ },
+ "fatigue": {
+  "path": "af00f5eaac78",
+  "vol": "7e19e43b04da",
+  "blk": "e8ddff97f27d",
+  "fit": "368077be6595",
+  "wkBilan": "",
+  "raceInfo": "87fe7304d88d",
+  "level": 0.9,
+  "note": "Bilan de la semaine précédente : 120 min réalisées sur 120 prévues (100 %), RPE moyen 5.0 → charge −10 %. Fatigue ÷ fitness à 1,56 (au-dessus de 1,5) : charge réduite.",
+  "todo": [
+   "Test de seuil à planifier (vélo, natation, course)",
+   "Sauvegarder mes données",
+   "Générer la semaine"
+  ],
+  "errors": []
+ }
+}

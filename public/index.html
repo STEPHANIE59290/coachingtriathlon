@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="Mon Coach">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="theme-color" content="#102a43">
-<meta name="app-version" content="2.20.4">
+<meta name="app-version" content="2.20.11">
 <script>
 // config.js : lu depuis le cache local (pas d'attente réseau) ; rafraîchi en tâche de fond. 1re visite seulement : chargement classique.
 try{var _c=JSON.parse(localStorage.getItem('half04_cfg')||'null');if(_c&&typeof _c==='object')window.SB_CONFIG=_c;}catch(e){}
@@ -19,7 +19,7 @@ else{document.write('<script src="config.js"><\/script>');window.addEventListene
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="icon-192.png">
-<title>Mon Coach Triathlon – v2.20.4</title>
+<title>Mon Coach Triathlon – v2.20.11</title>
 <style>
 :root{--navy:#102a43;--blue:#176b87;--cyan:#d9f0f4;--bg:#f3f6f8;--card:#fff;--ink:#172b3a;--muted:#607483;--line:#dce5ea;--green:#247a57;--orange:#b96b16}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.45}
@@ -63,7 +63,7 @@ details.icu{border:1px solid var(--line);border-radius:12px;padding:9px 11px;mar
 </style>
 </head>
 <body>
-<header><div class="top"><h1>Mon Coach Triathlon</h1><span class="version">Version 2.20.4</span><button class="secondary" id="bell" onclick="goTodo()" style="min-height:0;padding:4px 10px;margin-left:8px">À faire <span id="bellN" class="pill">0</span></button></div><p id="appSub">Préparation triathlon · Coach personnel</p></header>
+<header><div class="top"><h1>Mon Coach Triathlon</h1><span class="version">Version 2.20.11</span><button class="secondary" id="bell" onclick="goTodo()" style="min-height:0;padding:4px 10px;margin-left:8px">À faire <span id="bellN" class="pill">0</span></button></div><p id="appSub">Préparation triathlon · Coach personnel</p></header>
 <nav id="tabs">
 <button class="active" data-tab="home">Accueil</button><button data-tab="week">Ma semaine</button><button data-tab="sessions">Séances</button><button data-tab="log">Suivi</button><button data-tab="fitness">Condition physique</button><button data-tab="profile">Profil</button>
 </nav>
@@ -73,6 +73,7 @@ details.icu{border:1px solid var(--line);border-radius:12px;padding:9px 11px;mar
 <div id="injBanner"></div>
 <div class="card" id="todayCard"><h2>Séance du jour</h2><div id="todayBox"></div><div id="homeImportMsg" class="hint"></div></div>
 <div class="card" id="rpeCard" style="display:none"><h2>Séances sans RPE</h2><div id="rpeBox"></div></div>
+<div class="card" id="reviewCard" style="display:none"><h2>Bilan de la semaine</h2><div id="reviewBox"></div></div>
 <div class="card"><h2 id="homePlanTitle">Cette semaine</h2><div id="homePlan" class="muted">Aucun planning généré pour le moment.</div></div>
 <div class="card" id="wkBilanCard" style="display:none"><h2>Prévu / réalisé</h2><div id="wkBilanBox"></div></div>
 <div class="card" id="coachCard"><h2>Consigne du coach</h2><div id="coachShow"></div><div class="actions"><button class="primary" id="coachPasteBtn" onclick="pasteCoach()">Coller la réponse de Claude</button></div><div id="coachMsg" class="hint">Copie la réponse de Claude puis reviens ici : elle se colle toute seule si tu as copié le dossier depuis l’app. Sinon, touche le bouton (sur iPhone, confirme « Coller »).</div><details class="icu" id="coachManual"><summary><strong>Écrire ou modifier à la main</strong></summary><textarea id="coachNote" rows="5" maxlength="2000" placeholder="Colle ici la réponse de Claude après une analyse"></textarea><div class="actions"><button class="primary" onclick="saveCoach()">Enregistrer</button><button class="secondary" onclick="clearCoach()">Effacer</button></div></details></div>
@@ -91,6 +92,7 @@ details.icu{border:1px solid var(--line);border-radius:12px;padding:9px 11px;mar
 <div class="grid"><div class="stat"><strong id="weekHours">0 h</strong><span>Réalisé cette semaine</span></div><div class="stat"><strong id="plannedHours">0 h</strong><span>Entraînement planifié</span></div></div>
 <div class="actions"><button class="primary" onclick="showTab('week')">Organiser ma semaine</button><button class="secondary" onclick="document.getElementById('bilanCard').scrollIntoView({behavior:'smooth'})">Saisir mon bilan</button></div></div>
 <div class="card fold closed" id="raceCard"><h2 class="fh">Plan jusqu’à la course</h2><div id="raceBox"></div></div>
+<div class="card fold closed" id="forecastCard"><h2 class="fh">Prévision et fiche de course</h2><div id="forecastBox"></div></div>
 <div class="card fold closed" id="wellCard"><h2 class="fh">Récupération (Garmin via intervals.icu)</h2><div id="wellBox"></div></div>
 <div class="warn">Le planning proposé est une base de travail à valider selon tes sensations. En cas de douleur persistante, maladie ou fatigue inhabituelle, privilégie le repos et demande un avis médical si nécessaire.</div>
 </section>
@@ -171,6 +173,7 @@ details.icu{border:1px solid var(--line);border-radius:12px;padding:9px 11px;mar
 <div class="card fold closed" id="hoursCard"><h2 class="fh">Mes heures d’entraînement</h2><label for="hrsNow">Ces 4 dernières semaines, en moyenne (h / semaine)</label><input id="hrsNow" type="number" min="0" max="40" step="0.5" inputmode="decimal"><p class="hint" id="hrsMeasured"></p><label for="hrsPeak">Au plus fort de la saison, tu peux tenir (h / semaine)</label><input id="hrsPeak" type="number" min="0" max="40" step="0.5" inputmode="decimal"><p class="hint">Ce que ta vie te permet de tenir pendant deux à trois mois, pas ta meilleure semaine. Le volume monte de l’un à l’autre (+10 % par semaine au plus, une semaine de récupération sur quatre).</p><div class="actions"><button class="primary" onclick="saveHours()">Enregistrer mes heures</button></div><div id="hrsCheck"></div></div>
 <div class="card fold closed" id="raceVolCard" style="display:none"><h2 class="fh">Volume par bloc jusqu’à la course</h2><div id="raceVolBox"></div></div>
 <div class="card fold closed" id="zBikeCard"><h2 class="fh">Zones vélo indicatives (FTP)</h2><h3>Vélo dehors</h3><div id="zones"></div><h3 style="margin-top:14px">Vélo d’intérieur (home trainer)</h3><div id="zonesIn"></div><p class="hint">Calcul classique à partir de la FTP renseignée. À considérer comme provisoire jusqu'à un test FTP fiable.</p></div>
+<div class="card fold closed" id="swimTechCard"><h2 class="fh">Technique de nage</h2><div id="swimTechBox"></div></div>
 <div class="card fold closed" id="zSwimCard"><h2 class="fh">Zones natation (allure /100 m)</h2><div id="swimZones"></div><p class="hint">Estimation à partir de ta vitesse max sur 100 m : l’allure seuil (CSS) est calculée à +18 %, puis les zones en découlent. À affiner avec un test 200 m / 400 m.</p></div>
 <div class="card fold closed" id="zRunCard"><h2 class="fh">Zones course à pied (allure /km)</h2><div id="runZones"></div><p class="hint">Zones calculées en pourcentage de ton allure cible du semi. Sur un half, tu cours après le vélo : choisis une allure réaliste dans cette situation, pas ton allure à plat et frais.</p></div>
 <div class="card fold closed" id="progCard"><h2 class="fh">Progression de la charge</h2><div id="progInfo"></div><div class="actions"><button class="secondary" onclick="nudgeLoad(-0.05)">− 5 %</button><button class="secondary" onclick="nudgeLoad(0.05)">+ 5 %</button><button class="secondary danger" onclick="resetProg()">Réinitialiser</button></div><p class="hint">La charge règle le nombre de répétitions des séances de qualité et la durée des séances d’endurance. À chaque nouvelle semaine générée, elle monte de 5 % si la semaine précédente a été réalisée à au moins 85 % avec une difficulté modérée (RPE moyen ≤ 6,5), et baisse de 10 % si elle a été trop dure (RPE ≥ 8) ou réalisée à moins de 60 %. La 4e semaine du cycle est une semaine de récupération (−30 %). Le bilan s’appuie sur les séances enregistrées dans « Suivi » : ajuste à la main avec les boutons si besoin.</p></div>
@@ -196,7 +199,7 @@ details.icu{border:1px solid var(--line);border-radius:12px;padding:9px 11px;mar
 <div class="actions"><button class="secondary" onclick="calcTest('run')">Calculer</button></div><div id="runRes" class="hint"></div><p class="hint">Les conversions vers l’allure semi (+6 %) et l’allure de course après le vélo (+4 %) sont des moyennes, appliquées à la vitesse critique comme à l’allure du test de 30 min : à affiner avec tes courses.</p></details></div>
 <div class="card fold closed" id="trendCard"><h2 class="fh">Évolution de tes indicateurs</h2><div id="trendBox"></div></div>
 
-<div class="card"><details><summary style="cursor:pointer;font-size:16px;font-weight:700">À propos de la version 2.20.4</summary><div class="actions" style="margin:8px 0"><button class="secondary" onclick="checkUpdate(true)">Vérifier les mises à jour</button><button class="secondary" id="preMigBtn" style="display:none" onclick="restorePreMigration()">Revenir à avant la dernière migration</button></div><p>La 2.20.4 garde deux plannings (semaine en cours et semaine prochaine, avec un sélecteur dans Ma semaine), lance l’analyse dès l’import avec un verdict en une ligne, et propose d’alléger la prochaine séance intense après une séance trop dure. La 2.20.3 corrige l’intitulé de la carte « Cette semaine » de l’accueil quand le planning est celui d’une autre semaine (il indique alors « Semaine du … (à venir) » avec les dates), et affiche l’analyse prévu / réalisé directement dans la carte « Séance du jour » de l’accueil, sous la séance importée. La 2.17 ajoute le vélo d’intérieur (FTP d’intérieur, test dédié, case « Vélo d’intérieur » par séance dans Ma semaine), la blessure dans le bilan du jour (type, sports bloqués, séances adaptées), le collage automatique de la consigne de Claude, et des cartes repliables (accueil, Ma semaine, Séances, Profil). La 2.16 ajoute les comptes (inscription sur invitation, e-mail et mot de passe) et la synchronisation entre appareils, actifs dès que config.js est renseigné. La 2.15 rend les mises à jour transparentes : à l’ouverture, l’app détecte la dernière version et se recharge seule, sans toucher à tes données ni à ton historique ; un cadre de migration protège les futurs changements de format. La 2.14 porte la durée max d’un créneau jusqu’à 8 h et fixe la cible de fitness sur l’objectif (type de course, ou valeur choisie) au lieu de ton seul volume de pic. La 2.13 ajoute la carte « Ton chemin vers la cible » : fitness réelle, projection prévue jusqu’à l’affûtage et cible tirée de ton volume de pic. La 2.12 permet une semaine type par bloc (base, développement, spécifique) : le volume de chaque bloc part des créneaux de son bloc, et chaque nouvelle semaine charge ceux de son bloc. La 2.11.1 rend visible l’origine du volume par bloc (total des créneaux) avec des raccourcis pour le modifier. La 2.11 ajoute la saison multi-courses (priorités A, B, C), les heures actuelles et au pic avec une montée de volume réaliste, la liste « À faire » et des séances spécifiques Ironman. La 2.10 affiche dans le Profil le volume d’heures par semaine, bloc par bloc, dès que la date de la course est renseignée. La 2.9 ajoute l’usage hors ligne (service worker : réseau d’abord, la copie en mémoire ne sert qu’en secours). La 2.8 rend l’app installable proprement (manifest, icônes) et évite qu’une ancienne version reste en cache. La 2.7 ne laisse plus la charge monter sans RPE (pastilles 1 à 10 sur l’accueil pour noter une séance), propose un créneau précis pour chaque séance non placée et remplace les fenêtres de confirmation par un message discret. La 2.6 adapte la charge discipline par discipline : si ton RPE, ta forme et ton taux de réalisation montrent que le vélo passe mieux que la course (ou l’inverse), les séances de la discipline qui répond bien s’allongent de 5 % et celles de l’autre sont allégées de 5 %, dans une limite de ±15 %. La 2.5 protège les données (stockage persistant demandé, conseil d’installation sur l’écran d’accueil, partage de la sauvegarde en un geste), intègre la séance libre à « Ma semaine » et ajoute des repères de ravitaillement (glucides et boisson) sur les séances de vélo et de course de 75 min ou plus, à ajuster à ta tolérance digestive. La 2.4 ajoute la saisie directe de la FTP sur l’accueil (comme la natation et la course) et la « Séance libre » : un texte classique est réécrit au format intervals.icu, compatible Garmin, et envoyé dans le calendrier. La 2.3 remplace la saisie des disponibilités par des créneaux (séance 1, séance 2…, sports possibles, durée max, enchaînés vélo-course) : le volume hebdomadaire est le cumul de ces créneaux et ne se saisit plus. La 2.2 remplace « Disponibilité saisie » par « Réalisé cette semaine », replie la saisie manuelle (secours) et transforme les boutons « Fait » en import depuis intervals.icu. La 2.1 corrige la reprise (séances variées, charge à 65 % puis 80 %, sans qualité ni séance longue), ajoute « Je n’ai pas pu » pour décaler ou abandonner une séance, l’historique des bilans du jour (relié à la charge) et la consigne du coach. La 2.0 ajoute le mode reprise après arrêt, la saisie directe des données manquantes depuis l’accueil et la semaine type. La 1.9 remplace les tests de vélo et de course par la Critical Power (5 min + 20 min) et la vitesse critique (3 min + 9 min). La 1.8 ajoute l’indicateur de dernière sauvegarde, la proposition de la semaine suivante dès le dimanche et des aides repliables.</p><details class="icu"><summary><strong>Historique des versions</strong></summary><p>La 1.7 ajoute la carte « Séance du jour » en tête de l’accueil, un bilan du jour qui propose d’alléger la séance, le signalement des données de profil manquantes et la saisie libre du volume hebdomadaire. Cette version ajoute la saisie des disponibilités quotidiennes et la génération d'un planning hebdomadaire. La 0.4.2 ajoute les zones natation et course, utilisées pour les allures cibles des séances. La 0.5 ajoute les séances de tempo, de seuil et d’allure course, et une charge qui évolue avec ta progression (cycle de 4 semaines). La 0.6 ajoute l’export du planning vers le calendrier de l’iPhone (.ics), avec choix du compte Google (0.6.1). La 0.7 écrit chaque séance au format de l’éditeur d’intervals.icu, prête à copier-coller, avec envoi direct par clé API (0.7.1). La 0.8 importe les séances réalisées depuis intervals.icu et les compare au planning. La 0.9 analyse chaque séance réalisée bloc par bloc et prépare un dossier à coller dans Claude. La 0.9.1 permet de restaurer une sauvegarde. La 1.0 planifie par phases jusqu’à la date de la course et recalibre tes zones avec des tests (FTP, natation, course). La 1.1 calibre le volume et l’affûtage sur une préparation de référence (montée progressive, semaine de course allégée, déblocage de la veille). La 1.3 reprend la structure d’un plan complet : cycle INTRO / LOAD / OVERREACH / RECOVERY, affûtage en 3 semaines (assimilation, recharge, approche course) et répartition 19 % natation, 51 % vélo, 30 % course. La 1.5 reprend la forme ressentie, le RPE et les données de récupération de ta montre via intervals.icu. La 1.6 ajoute l’onglet Condition physique (fitness, fatigue, forme et projection jusqu’à la course). La 1.2 permet d’exporter les séances planifiées d’un athlète, avec son accord. La 1.4 affine l’affûtage : trois nages, une qualité par discipline et un enchaînement vélo-course à l’allure semi la semaine de recharge. Elle reste une application personnelle locale : pas de compte, pas de serveur, pas de synchronisation automatique.</p></details><p class="muted">Pour conserver tes données, garde le même navigateur/appareil et utilise régulièrement l'export JSON.</p></details></div>
+<div class="card"><details><summary style="cursor:pointer;font-size:16px;font-weight:700">À propos de la version 2.20.11</summary><div class="actions" style="margin:8px 0"><button class="secondary" onclick="checkUpdate(true)">Vérifier les mises à jour</button><button class="secondary" id="preMigBtn" style="display:none" onclick="restorePreMigration()">Revenir à avant la dernière migration</button></div><p>La 2.20.11 ajoute le parcours et les conditions de course (dénivelé, température, vent, combinaison, import GPX ou TCX) à la prévision et à la fiche de course. La 2.20.10 ajoute le contrôle de la répartition de l’intensité, le bilan de semaine (dès le samedi), la répétition générale avant la course et un renforcement qui suit les phases. La 2.20.9 ajoute la carte « Technique de nage » (défauts, matériel, bassin) : les séances de natation technique utilisent les éducatifs correspondants, et un bouton ajoute une séance technique à la semaine. La 2.20.8 ajoute la prévision de course (70.3 ou Ironman) avec fourchette, leviers de progression et fiche de course (puissance, allures, ravitaillement). La 2.20.7 ajoute la régularité (volume réalisé sur volume prévu) au bilan des 4 semaines. La 2.20.6 ajoute un bilan des 4 dernières semaines (volume par sport, séances, RPE moyen) dans « Évolution de tes indicateurs ». La 2.20.5 propose de décaler les séances manquées (carte Séance du jour et Ma semaine). La 2.20.4 garde deux plannings (semaine en cours et semaine prochaine, avec un sélecteur dans Ma semaine), lance l’analyse dès l’import avec un verdict en une ligne, et propose d’alléger la prochaine séance intense après une séance trop dure. La 2.20.3 corrige l’intitulé de la carte « Cette semaine » de l’accueil quand le planning est celui d’une autre semaine (il indique alors « Semaine du … (à venir) » avec les dates), et affiche l’analyse prévu / réalisé directement dans la carte « Séance du jour » de l’accueil, sous la séance importée. La 2.17 ajoute le vélo d’intérieur (FTP d’intérieur, test dédié, case « Vélo d’intérieur » par séance dans Ma semaine), la blessure dans le bilan du jour (type, sports bloqués, séances adaptées), le collage automatique de la consigne de Claude, et des cartes repliables (accueil, Ma semaine, Séances, Profil). La 2.16 ajoute les comptes (inscription sur invitation, e-mail et mot de passe) et la synchronisation entre appareils, actifs dès que config.js est renseigné. La 2.15 rend les mises à jour transparentes : à l’ouverture, l’app détecte la dernière version et se recharge seule, sans toucher à tes données ni à ton historique ; un cadre de migration protège les futurs changements de format. La 2.14 porte la durée max d’un créneau jusqu’à 8 h et fixe la cible de fitness sur l’objectif (type de course, ou valeur choisie) au lieu de ton seul volume de pic. La 2.13 ajoute la carte « Ton chemin vers la cible » : fitness réelle, projection prévue jusqu’à l’affûtage et cible tirée de ton volume de pic. La 2.12 permet une semaine type par bloc (base, développement, spécifique) : le volume de chaque bloc part des créneaux de son bloc, et chaque nouvelle semaine charge ceux de son bloc. La 2.11.1 rend visible l’origine du volume par bloc (total des créneaux) avec des raccourcis pour le modifier. La 2.11 ajoute la saison multi-courses (priorités A, B, C), les heures actuelles et au pic avec une montée de volume réaliste, la liste « À faire » et des séances spécifiques Ironman. La 2.10 affiche dans le Profil le volume d’heures par semaine, bloc par bloc, dès que la date de la course est renseignée. La 2.9 ajoute l’usage hors ligne (service worker : réseau d’abord, la copie en mémoire ne sert qu’en secours). La 2.8 rend l’app installable proprement (manifest, icônes) et évite qu’une ancienne version reste en cache. La 2.7 ne laisse plus la charge monter sans RPE (pastilles 1 à 10 sur l’accueil pour noter une séance), propose un créneau précis pour chaque séance non placée et remplace les fenêtres de confirmation par un message discret. La 2.6 adapte la charge discipline par discipline : si ton RPE, ta forme et ton taux de réalisation montrent que le vélo passe mieux que la course (ou l’inverse), les séances de la discipline qui répond bien s’allongent de 5 % et celles de l’autre sont allégées de 5 %, dans une limite de ±15 %. La 2.5 protège les données (stockage persistant demandé, conseil d’installation sur l’écran d’accueil, partage de la sauvegarde en un geste), intègre la séance libre à « Ma semaine » et ajoute des repères de ravitaillement (glucides et boisson) sur les séances de vélo et de course de 75 min ou plus, à ajuster à ta tolérance digestive. La 2.4 ajoute la saisie directe de la FTP sur l’accueil (comme la natation et la course) et la « Séance libre » : un texte classique est réécrit au format intervals.icu, compatible Garmin, et envoyé dans le calendrier. La 2.3 remplace la saisie des disponibilités par des créneaux (séance 1, séance 2…, sports possibles, durée max, enchaînés vélo-course) : le volume hebdomadaire est le cumul de ces créneaux et ne se saisit plus. La 2.2 remplace « Disponibilité saisie » par « Réalisé cette semaine », replie la saisie manuelle (secours) et transforme les boutons « Fait » en import depuis intervals.icu. La 2.1 corrige la reprise (séances variées, charge à 65 % puis 80 %, sans qualité ni séance longue), ajoute « Je n’ai pas pu » pour décaler ou abandonner une séance, l’historique des bilans du jour (relié à la charge) et la consigne du coach. La 2.0 ajoute le mode reprise après arrêt, la saisie directe des données manquantes depuis l’accueil et la semaine type. La 1.9 remplace les tests de vélo et de course par la Critical Power (5 min + 20 min) et la vitesse critique (3 min + 9 min). La 1.8 ajoute l’indicateur de dernière sauvegarde, la proposition de la semaine suivante dès le dimanche et des aides repliables.</p><details class="icu"><summary><strong>Historique des versions</strong></summary><p>La 1.7 ajoute la carte « Séance du jour » en tête de l’accueil, un bilan du jour qui propose d’alléger la séance, le signalement des données de profil manquantes et la saisie libre du volume hebdomadaire. Cette version ajoute la saisie des disponibilités quotidiennes et la génération d'un planning hebdomadaire. La 0.4.2 ajoute les zones natation et course, utilisées pour les allures cibles des séances. La 0.5 ajoute les séances de tempo, de seuil et d’allure course, et une charge qui évolue avec ta progression (cycle de 4 semaines). La 0.6 ajoute l’export du planning vers le calendrier de l’iPhone (.ics), avec choix du compte Google (0.6.1). La 0.7 écrit chaque séance au format de l’éditeur d’intervals.icu, prête à copier-coller, avec envoi direct par clé API (0.7.1). La 0.8 importe les séances réalisées depuis intervals.icu et les compare au planning. La 0.9 analyse chaque séance réalisée bloc par bloc et prépare un dossier à coller dans Claude. La 0.9.1 permet de restaurer une sauvegarde. La 1.0 planifie par phases jusqu’à la date de la course et recalibre tes zones avec des tests (FTP, natation, course). La 1.1 calibre le volume et l’affûtage sur une préparation de référence (montée progressive, semaine de course allégée, déblocage de la veille). La 1.3 reprend la structure d’un plan complet : cycle INTRO / LOAD / OVERREACH / RECOVERY, affûtage en 3 semaines (assimilation, recharge, approche course) et répartition 19 % natation, 51 % vélo, 30 % course. La 1.5 reprend la forme ressentie, le RPE et les données de récupération de ta montre via intervals.icu. La 1.6 ajoute l’onglet Condition physique (fitness, fatigue, forme et projection jusqu’à la course). La 1.2 permet d’exporter les séances planifiées d’un athlète, avec son accord. La 1.4 affine l’affûtage : trois nages, une qualité par discipline et un enchaînement vélo-course à l’allure semi la semaine de recharge. Elle reste une application personnelle locale : pas de compte, pas de serveur, pas de synchronisation automatique.</p></details><p class="muted">Pour conserver tes données, garde le même navigateur/appareil et utilise régulièrement l'export JSON.</p></details></div>
 <div class="card" id="xportCard"><details><summary style="cursor:pointer;font-size:16px;font-weight:700">Exporter les séances planifiées d’un athlète</summary><div style="margin-top:10px">
 <p class="hint" style="margin-top:0">Pour t’inspirer d’un plan d’entraînement. À utiliser uniquement avec l’accord de l’athlète : il te donne son identifiant et sa clé API (intervals.icu : Settings > Developer Settings). Rien n’est enregistré par l’app et la clé est effacée du champ après l’export.</p>
 <label for="xAthlete">Identifiant de l’athlète</label><input id="xAthlete" type="text" placeholder="ex. i123456" autocomplete="off" autocapitalize="none">
@@ -216,7 +219,7 @@ details.icu{border:1px solid var(--line);border-radius:12px;padding:9px 11px;mar
 <div class="card"><div class="actions" style="margin-top:0"><button class="primary" onclick="refreshFitness()">Mettre à jour depuis intervals.icu</button></div><div id="fitStatus" class="hint"></div>
 <p class="hint">Fitness : charge d’entraînement des 6 dernières semaines. Fatigue : celle de la dernière semaine. Forme : fitness moins fatigue (positive = frais, négative = en charge). Ces valeurs sont calculées par intervals.icu à partir de tes séances ; la partie en pointillés est une projection de ton plan.</p></div>
 </section>
-</main><footer>Mon Coach Triathlon · v2.20.4 · Application personnelle</footer>
+</main><footer>Mon Coach Triathlon · v2.20.11 · Application personnelle</footer>
 <script>
 const days=['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'];
 const choices=[0,30,45,60,90,120,150,180,240];
@@ -275,7 +278,7 @@ let storageWarned=false;
 const get=(k,d)=>{try{return JSON.parse(localStorage.getItem('half04_'+k))??d}catch(e){return d}};
 const put=(k,v)=>{try{localStorage.setItem('half04_'+k,JSON.stringify(v));try{sbDirty(k);}catch(_){}return true}catch(e){if(!storageWarned){storageWarned=true;alert('Le stockage local est indisponible (navigation privée ou accès bloqué) : tes données ne seront pas conservées. Pense à exporter.');}return false}};
 // ---- Versions : une mise à jour ne modifie jamais ton contenu ni ton historique ----
-const APP_VERSION='2.20.4',DATA_VERSION=1;
+const APP_VERSION='2.20.11',DATA_VERSION=1;
 const MIGRATIONS={ // n : fonction idempotente qui fait passer les données de la version n-1 à n (ex. 2:()=>{...})
 };
 (function migrateData(){
@@ -489,7 +492,7 @@ function showTab(id){document.querySelectorAll('.panel').forEach(x=>x.classList.
 document.querySelectorAll('nav button').forEach(b=>b.addEventListener('click',()=>showTab(b.dataset.tab)));
 
 function init(){
- autoPlanWeek();
+ autoPlanWeek();try{renderSwimTech();}catch(e){}
  const today=new Date(),curMonday=iso(mondayOf());
  const ws=get('weekStart',null);
  const nm=mondayOf();nm.setDate(nm.getDate()+7);
@@ -676,12 +679,8 @@ function buildCatalog(focus,n,rec,ctx){
   ()=>mkS('Vélo','Vélo souple',45,'Pédalage fluide, faible résistance','Très facile',{zone:'Z1',steps:[{name:'Séance',items:[{cue:'Pédalage fluide',min:45,z:'Z1'}]}]}),
   ()=>mkS('Renforcement','Mobilité et gainage léger',25,'Mobilité douce, respiration et stabilité','Très facile')];
  if(ph==='race')return[swimOpen,bikeOpen,runOpen,endur('Course','Footing facile',40,10,5,'Z2','Facile')];
- const swimTech=()=>mkS('Natation','Natation technique',45,'300 m d’échauffement en {Z2} · 6 × 50 m éducatifs, récupération 20 s · 6 × 100 m de nage régulière en {Z3}, récupération 20 s · 200 m de retour au calme','Facile',{steps:[
-  {name:'Échauffement',items:[{cue:'Facile',mtr:300,z:'Z2'}]},
-  {name:'Éducatifs',reps:6,items:[{cue:'Éducatif',mtr:50,z:'Z2'},{rest:true,sec:20}]},
-  {name:'Nage régulière',reps:6,items:[{cue:'Régulier',mtr:100,z:'Z3'},{rest:true,sec:20}]},
-  {name:'Retour au calme',items:[{cue:'Souple',mtr:200,z:'Z2'}]}]});
- const strength=()=>mkS('Renforcement','Renforcement général',30,'Gainage, stabilité, chaîne postérieure et mobilité, sans aller à l’échec','Modéré');
+ const swimTech=()=>swimTechBuild();
+ const strength=()=>strengthBuild(ph);
  const bikeEnd=endur('Vélo','Vélo endurance',60,10,10,'Z2','Z2');
  const bikeLong=endur('Vélo','Vélo endurance long',120,15,10,'Z2','Z2',{hi:1.4,lo:0.5,long:true});
  const runEasy=endur('Course','Footing facile',40,10,5,'Z2','Facile');
@@ -701,7 +700,8 @@ function buildCatalog(focus,n,rec,ctx){
  const rq=o=>(tests.has('run')&&o===0)?T_RUN:soft?(o?runEasy:runSoft):Q_RUN[rot(rotR,k+o)];
  const sq=o=>(tests.has('css')&&o===0)?T_CSS:soft?(o?swimEnd:swimSoft):Q_SWIM[rot(rotS,k+o)];
  const im=ctx.type==='Ironman'&&ph==='spec'&&!rec;
- const longBike=(ph==='spec'&&!rec)?(im?bikeLongIM:bikeLongSpec):bikeLong,longRun=(ph==='spec'&&!rec)?(im?runLongIM:runLongFinish):runLong;
+ const rg=ph==='spec'&&!rec&&ctx.wr===(ctx.type==='Ironman'?6:4);
+ const longBike=rg?bikeRG(ctx.type):(ph==='spec'&&!rec)?(im?bikeLongIM:bikeLongSpec):bikeLong,longRun=(ph==='spec'&&!rec)?(im?runLongIM:runLongFinish):runLong;
  const lists={
   balanced:(ph==='spec'&&!rec)?[swimTech,(im?swimLongIM:sq(0)),bikeEnd,longBike,bq(0),runEasy,longRun,strength]:(ph==='taper')?(ctx.wr===2
    ?[swimTech,sq(0),swimEnd,longBike,bq(0),runEasy,runLong,rq(0),strength]   // assimilation : 3 nages, 2 vélos (longue sortie + allure), 3 courses
@@ -814,10 +814,7 @@ const skippedMin=ws=>{const k=get('skipped',null);return k&&k.week===ws?(+k.min|
 function skipSession(i){
  const x=plan[i];if(!x||x.event)return;
  const ps=get('planStart',''),t=ps===iso(mondayOf())?(new Date().getDay()+6)%7:-1,br=get('bricks',[]);
- const hard=y=>!!(y.quality||y.long),mine=hard(x);
- const used=d=>plan.reduce((a,y,j)=>a+(j!==i&&y.day===d&&!y.event?y.min:0),0);
- const cand=days.map((_,d)=>d).filter(d=>d>t&&d!==x.day&&daySports[d].includes(x.sport)&&(slots[d]||[]).some(sl=>sl.sports.includes(x.sport)&&sl.max>=x.min)&&availability[d]-used(d)>=x.min&&!(x.sport==='Course'&&br[d])&&!(mine&&plan.some((y,j)=>j!==i&&!y.event&&hard(y)&&Math.abs(y.day-d)<=1)))
-  .sort((a,b)=>((a>x.day)?0:1)-((b>x.day)?0:1)||Math.abs(a-x.day)-Math.abs(b-x.day));
+ const cand=shiftCands(i,t);
  if(cand.length){
   const d=cand[0];
   if(!confirm(`Déplacer « ${x.title} » au ${days[d].toLowerCase()} ?`))return;
@@ -1185,7 +1182,7 @@ function generatePlan(){
  $('planCard').scrollIntoView({behavior:'smooth',block:'start'});
 }
 
-// ---- 2.20.4 : deux plannings, analyse automatique, ajustement de la semaine ----
+// ---- 2.20.11 : deux plannings, analyse automatique, ajustement de la semaine ----
 function swapPlans(){const pv=get('prevPlan',null);if(!pv||!Array.isArray(pv.plan)||!pv.start)return false;
  const o={start:get('planStart',''),plan:plan,notes:get('planNotes',[])};
  plan=pv.plan;put('plan',plan);put('planStart',pv.start);put('planNotes',pv.notes||[]);put('prevPlan',o);return true;}
@@ -1211,9 +1208,24 @@ function adjustHtml(){try{
 }catch(e){return '';}}
 function adjustLighten(i,ext){adaptSession(i,'easy');adjustKeep(ext);}
 function adjustKeep(ext){const d=get('adjDone',{});d[ext]=1;put('adjDone',d);renderToday();}
+// ---- 2.20.11 : séances manquées ----
+function shiftCands(i,t){const x=plan[i],br=get('bricks',[]),hard=y=>!!(y.quality||y.long),mine=hard(x);
+ const used=d=>plan.reduce((a,y,j)=>a+(j!==i&&y.day===d&&!y.event?y.min:0),0);
+ return days.map((_,d)=>d).filter(d=>d>t&&d!==x.day&&daySports[d].includes(x.sport)&&(slots[d]||[]).some(sl=>sl.sports.includes(x.sport)&&sl.max>=x.min)&&availability[d]-used(d)>=x.min&&!(x.sport==='Course'&&br[d])&&!(mine&&plan.some((y,j)=>j!==i&&!y.event&&hard(y)&&Math.abs(y.day-d)<=1)))
+  .sort((a,b)=>((a>x.day)?0:1)-((b>x.day)?0:1)||Math.abs(a-x.day)-Math.abs(b-x.day));}
+function missedHtml(){try{
+ if(get('planStart','')!==iso(mondayOf()))return '';
+ const t=(new Date().getDay()+6)%7,dm=matchDone();
+ const i=plan.findIndex((x,j)=>x.day<t&&!dm[j]&&!x.event&&!x.opener);if(i<0)return '';
+ const x=plan[i],c=shiftCands(i,t-1);
+ return `<div class="warn" style="margin:10px 0">Séance manquée : « ${esc(x.title)} » (${days[x.day]}, ${x.min} min). ${c.length?`La décaler au ${days[c[0]].toLowerCase()} ?`:'Aucun créneau libre cette semaine.'}<div class="actions" style="margin-top:8px">${c.length?`<button class="primary" onclick="missedMove(${i},${c[0]})">Décaler</button>`:''}<button class="secondary" onclick="missedDrop(${i})">Laisser tomber</button></div></div>`;
+}catch(e){return '';}}
+function missedMove(i,d){if(!plan[i])return;plan[i]=Object.assign({},plan[i],{day:d,moved:true});put('plan',plan);renderPlan();renderToday();refreshStats();}
+function missedDrop(i){const x=plan[i];if(!x)return;const ps=get('planStart',''),base=x.orig||x,k=get('skipped',null);
+ put('skipped',{week:ps,min:(k&&k.week===ps?(+k.min||0):0)+base.min});plan.splice(i,1);put('plan',plan);renderPlan();renderToday();refreshStats();}
 function dayLabel(i){const ps=get('planStart','');if(!ps)return '';const d=mondayOf(ps);d.setDate(d.getDate()+i);return d.toLocaleDateString('fr-FR',{day:'numeric',month:'short'});}
 function renderPlan(){
- renderIntervals();{const sw=$('planSwitch');if(sw)sw.innerHTML=planSwitchHtml();}
+ renderIntervals();try{logPlanWeek();}catch(e){}{const sw=$('planSwitch');if(sw)sw.innerHTML=planSwitchHtml()+missedHtml();}
  const el=$('weeklyPlan'),home=$('homePlan');
  if(!plan.length){el.innerHTML='<p class="muted">Aucun planning généré pour le moment.</p>';home.textContent='Aucun planning généré pour le moment.';{const t0=$('homePlanTitle');if(t0)t0.textContent='Cette semaine';}renderToday();return;}
  const ps=get('planStart','');
@@ -1588,7 +1600,8 @@ function renderWkBilan(){
  card.style.display='';const pct=Math.round(D/P*100);
  el.innerHTML=`<p style="margin:0 0 8px"><strong>${pct} %</strong> réalisé · ${D} min sur ${P} prévues</p>`+sp.map(k=>{const d0=dn[k]||0,p0=pl[k];return `<div style="margin:7px 0"><div style="display:flex;justify-content:space-between;font-size:13px"><span>${esc(k)}</span><span class="muted">${d0} / ${p0} min</span></div><div class="bar"><i style="width:${Math.min(100,Math.round(d0/p0*100))}%"></i></div></div>`;}).join('')+`<p class="hint">${pct<60?'Semaine peu réalisée : la charge sera réduite à la prochaine génération.':pct>=85?'Semaine bien tenue : la charge pourra monter si le RPE reste modéré.':'Semaine partielle : la charge restera inchangée.'}</p>`;
 }
-function renderToday(){
+function renderToday(){renderToday0();try{renderReview();}catch(e){}}
+function renderToday0(){
  try{renderRpeBox();}catch(e){}
  try{renderInjBanner();}catch(e){}
  try{if(!$('pathCard').classList.contains('closed'))renderPath();}catch(e){}
@@ -1637,7 +1650,7 @@ function renderToday(){
   return out;
  }).join('');
  if(st.level==='soft'&&todays.some(o=>(o.x.orig||o.x).quality||(o.x.orig||o.x).long))html+=`<p class="hint">Fatigue modérée : garde la séance et juge à la fin de l’échauffement.</p>`;
- box.innerHTML=html+adjustHtml()+`<div class="actions">${prep('secondary')}${seeWeek}</div>`+missing;
+ box.innerHTML=html+missedHtml()+adjustHtml()+`<div class="actions">${prep('secondary')}${seeWeek}</div>`+missing;
 }
 
 
@@ -1693,7 +1706,7 @@ function renderHistory(){try{refreshStats();}catch(e){}
 function clearHistory(){if(confirm('Effacer tout l’historique enregistré sur cet appareil ?')){workouts=[];put('history',workouts);renderHistory();}}
 
 function exportData(share){
- const data={version:'2.20.4',exportedAt:new Date().toISOString(),availability,daySports,bricks:get('bricks',[]),focus:get('focus','balanced'),weekStart:get('weekStart',''),plan,planStart:get('planStart',''),history:workouts,
+ const data={version:'2.20.11',exportedAt:new Date().toISOString(),availability,daySports,bricks:get('bricks',[]),focus:get('focus','balanced'),weekStart:get('weekStart',''),plan,planStart:get('planStart',''),history:workouts,
   profile:{ftp:get('ftp',180),ftpIn:get('ftpIn',''),target:get('target',8),swim:get('swim',2000),run:get('run',50),swimMax:get('swimMax',''),runHM:get('runHM',''),hrThr:get('hrThr',0),swimCss:get('swimCss',''),raceDay:get('raceDay',''),raceGoal:get('raceGoal',''),raceDate:get('raceDate','')},readiness:get('readiness',{}),prog:get('prog',null),analyses:get('analyses',{}),feel:get('feel',{}),startTimes,calAlarm:get('calAlarm',30),calEmail:get('calEmail',''),tests:get('tests',[]),testsOn:get('testsOn',true),wellness:get('wellness',{}),resume:get('resume',''),tpl:get('tpl',null),rdLog:get('rdLog',{}),coach:get('coach',null),skipped:get('skipped',null),slots:get('slots',null),races:get('races',null),hrsNow:get('hrsNow',null),hrsPeak:get('hrsPeak',null),blockSlots:get('blockSlots',null),injury:get('injury',null)};
  download('mon-coach-half-donnees.json',JSON.stringify(data,null,2),'application/json',share===true);
  put('lastBackup',new Date().toISOString());renderBackup();
@@ -2156,7 +2169,8 @@ function phaseBannerHtml(){
  const when=ri.wr<0?'course passée':ri.wr===0?'semaine de la course':`course dans ${ri.wr} semaine${ri.wr>1?'s':''}`;
  return `<div class="hint" style="margin-bottom:10px"><strong>Phase : ${esc(ri.name)}</strong>${ri.k?` · semaine ${ri.k}/${ri.N}`:''} · ${when}. ${esc(ri.obj.charAt(0).toUpperCase()+ri.obj.slice(1))}</div>`;
 }
-function renderRace(){
+function renderRace(){renderRace0();try{renderForecast();}catch(e){}}
+function renderRace0(){
  const el=$('raceBox');if(!el)return;
  const rd=curRaceDay();
  if(!rd){el.innerHTML='<p class="muted">Renseigne la date de ta course dans le Profil pour activer le plan par phases (base, développement, spécifique, affûtage).</p>';return;}
@@ -2275,7 +2289,222 @@ function spark(vals,lowerBetter){
  const better=lowerBetter?vals[vals.length-1]<vals[0]:vals[vals.length-1]>vals[0];
  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" aria-hidden="true"><polyline fill="none" stroke="${better?'var(--green)':'var(--orange)'}" stroke-width="2" points="${pts}"/></svg>`;
 }
-function renderTrends(){
+// ---- 2.20.11 : prévision de course, leviers, fiche de course ----
+const RACE_D={'70.3':{sw:1900,bk:90,rn:21.0975,tr:7},'Ironman':{sw:3800,bk:180,rn:42.195,tr:11}};
+function bikeSpeed(P,mass,cda){const rho=1.2,crr=0.004,g=9.81,eta=0.975;let lo=1,hi=25;
+ for(let i=0;i<40;i++){const v=(lo+hi)/2;((0.5*rho*cda*v*v*v+crr*mass*g*v)/eta>P)?hi=v:lo=v;}return (lo+hi)/2;}
+// ---- 2.20.11 : parcours et conditions de course ----
+function bikeTimeSeg(P,mass,cda,segs){const rho=1.2,crr=0.004,g=9.81,eta=0.975;let T=0,D=0;
+ segs.forEach(([m,gr])=>{const th=Math.atan(gr/100),c=Math.cos(th),sn=Math.sin(th),Pe=gr<-3?0:P;let lo=0.5,hi=22;
+  for(let i=0;i<40;i++){const v=(lo+hi)/2;((0.5*rho*cda*v*v*v+crr*mass*g*c*v+mass*g*sn*v)/eta>Pe)?hi=v:lo=v;}
+  const v=Math.min((lo+hi)/2,16);T+=m/v;D+=m;});
+ return {t:T,d:D};}
+function synthSegs(km,gain){const n=40,L=km*1000/n,gr=2*gain/(km*1000)*100;return Array.from({length:n},(_,i)=>[L,i%2?-gr:gr]);}
+function courseParams(r){const c=(get('courses',{}))[r.id]||{};let segs=null;
+ if(c.bf&&c.bf.g&&c.bf.g.length)segs=c.bf.g.map(g=>[c.bf.step,g]);else if(+c.bg>0)segs=synthSegs(RACE_D[r.type].bk,+c.bg);
+ return {segs,rgain:(c.rf&&c.rf.gain)?c.rf.gain:(+c.rg||0),temp:(c.t===''||c.t==null)?0:+c.t,wind:[1,1.02,1.05][+c.w||0],wet:+c.ws?0.96:1};}
+const hav=(a,b,c,d)=>{const R=6371000,r=x=>x*Math.PI/180,h=Math.sin(r(c-a)/2)**2+Math.cos(r(a))*Math.cos(r(c))*Math.sin(r(d-b)/2)**2;return 2*R*Math.asin(Math.sqrt(h));};
+function trackPoints(txt){const doc=new DOMParser().parseFromString(txt,'application/xml');if(doc.getElementsByTagName('parsererror').length)throw new Error('xml');
+ const P=[],tp=[...doc.getElementsByTagName('trkpt')];let miss=0;
+ if(tp.length>1){let cum=0,pl=null;tp.forEach(e=>{const la=+e.getAttribute('lat'),lo=+e.getAttribute('lon'),el=e.getElementsByTagName('ele')[0];
+  if(pl)cum+=hav(pl[0],pl[1],la,lo);pl=[la,lo];if(el&&isFinite(+el.textContent))P.push([cum,+el.textContent]);else miss++;});}
+ else[...doc.getElementsByTagName('Trackpoint')].forEach(e=>{const dm=e.getElementsByTagName('DistanceMeters')[0],al=e.getElementsByTagName('AltitudeMeters')[0];if(dm&&al)P.push([+dm.textContent,+al.textContent]);else miss++;});
+ if(P.length<10||miss>P.length)throw new Error('ele');return P;}
+function trackProfile(P){const step=250,total=P[P.length-1][0];if(!(total>1000))throw new Error('trace');
+ const n=Math.floor(total/step),E=[];let j=0;
+ for(let k=0;k<=n;k++){const d=k*step;while(j<P.length-2&&P[j+1][0]<d)j++;const a=P[j],b=P[j+1],t=b[0]>a[0]?Math.min(1,Math.max(0,(d-a[0])/(b[0]-a[0]))):0;E.push(a[1]+(b[1]-a[1])*t);}
+ const S=E.map((_,i)=>{const w=E.slice(Math.max(0,i-1),i+2);return w.reduce((x,y)=>x+y,0)/w.length;});
+ let gain=0;const g=[];for(let i=0;i<n;i++){const dz=S[i+1]-S[i];if(dz>0)gain+=dz;g.push(Math.max(-15,Math.min(15,+(dz/step*100).toFixed(1))));}
+ return {km:+(total/1000).toFixed(1),gain:Math.round(gain),g};}
+function saveCourse(){const r=raceFor(iso(mondayOf()));if(!r)return;const C=get('courses',{}),c=C[r.id]||{};
+ c.bg=+$('cBg').value||0;c.rg=+$('cRg').value||0;c.t=$('cT').value===''?'':+$('cT').value;c.w=+$('cW').value||0;c.ws=+$('cWs').value||0;C[r.id]=c;put('courses',C);renderForecast();}
+async function importCourse(kind,inp){const f=inp.files&&inp.files[0];if(!f)return;const r=raceFor(iso(mondayOf()));if(!r)return;
+ try{if(/\.fit$/i.test(f.name)){alert('Le format FIT n’est pas lisible ici : exporte ton parcours en GPX ou TCX (Garmin Connect, Strava ou intervals.icu).');return;}
+  const pr=trackProfile(trackPoints(await f.text())),C=get('courses',{}),c=C[r.id]||{};
+  if(kind==='b')c.bf={km:pr.km,gain:pr.gain,step:250,g:pr.g};else c.rf={km:pr.km,gain:pr.gain};
+  C[r.id]=c;put('courses',C);renderForecast();toast('Parcours importé : '+String(pr.km).replace('.',',')+' km, +'+pr.gain+' m.');}
+ catch(e){alert(e&&e.message==='ele'?'Ce fichier ne contient pas d’altitude : saisis le dénivelé à la main.':'Fichier illisible : utilise un fichier GPX ou TCX avec une trace.');}
+ finally{inp.value='';}}
+function clearCourse(kind){const r=raceFor(iso(mondayOf()));if(!r)return;const C=get('courses',{}),c=C[r.id]||{};if(kind==='b')delete c.bf;else delete c.rf;C[r.id]=c;put('courses',C);renderForecast();}
+function courseHtml(r){const c=(get('courses',{}))[r.id]||{},wi=+c.w||0;
+ const st=(k,lab,o,nom)=>o?`<p class="hint" style="margin:4px 0">${lab} importé : ${String(o.km).replace('.',',')} km, +${o.gain} m${Math.abs(o.km-nom)/nom>0.15?' (distance différente du format, vérifie le fichier)':''} <button class="secondary" style="padding:4px 10px;min-height:0" onclick="clearCourse('${k}')">Retirer</button></p>`:'';
+ return `<h3 style="margin:14px 0 4px">Parcours et conditions</h3><p class="hint">Saisis les données à la main, ou importe un fichier GPX ou TCX (export Garmin, Strava ou intervals.icu). Un fichier importé remplace le dénivelé saisi.</p><div class="grid"><div><label for="cBg">Dénivelé vélo (m)</label><input id="cBg" type="number" min="0" max="6000" value="${c.bg||''}" onchange="saveCourse()"></div><div><label for="cRg">Dénivelé course (m)</label><input id="cRg" type="number" min="0" max="3000" value="${c.rg||''}" onchange="saveCourse()"></div></div><div class="grid"><div><label for="cT">Température prévue (°C)</label><input id="cT" type="number" min="-5" max="45" value="${(c.t===''||c.t==null)?'':c.t}" onchange="saveCourse()"></div><div><label for="cW">Vent</label><select id="cW" onchange="saveCourse()"><option value="0"${wi===0?' selected':''}>Calme</option><option value="1"${wi===1?' selected':''}>Modéré</option><option value="2"${wi===2?' selected':''}>Fort</option></select></div></div><label for="cWs">Natation</label><select id="cWs" onchange="saveCourse()"><option value="0"${+c.ws?'':' selected'}>Sans combinaison</option><option value="1"${+c.ws?' selected':''}>Avec combinaison</option></select><div class="actions"><button class="secondary" onclick="$('cFileB').click()">Importer le parcours vélo</button><button class="secondary" onclick="$('cFileR').click()">Importer le parcours course</button></div><input id="cFileB" type="file" style="display:none" onchange="importCourse('b',this)"><input id="cFileR" type="file" style="display:none" onchange="importCourse('r',this)">${st('b','Parcours vélo',c.bf,RACE_D[r.type].bk)}${st('r','Parcours course',c.rf,RACE_D[r.type].rn)}`;}
+function fcTimes(ty,p){const d=RACE_D[ty],sw=d.sw/100*p.css*p.swf*(p.wet||1),w=p.ftp*p.ifa*(1-0.003*Math.max(0,(p.temp||0)-25));
+ let bk,v;if(p.segs&&p.segs.length){const q=bikeTimeSeg(w,p.mass,p.cda,p.segs);bk=q.t;v=q.d/q.t;}else{v=bikeSpeed(w,p.mass,p.cda);bk=d.bk*1000/v;}
+ const wd=p.wind||1;bk*=wd;v/=wd;
+ const pace=p.run*p.rnf*(1+0.004*Math.max(0,(p.temp||0)-20)),rn=d.rn*pace+(p.rgain||0)*0.7,tr=d.tr*60;
+ return {sw,bk,rn,tr,w,v,pace,tot:sw+bk+rn+tr};}
+const fmtT=sec=>{const m=Math.round(sec/60);return Math.floor(m/60)+' h '+pad(m%60);};
+function goalMin(){const m=String($('raceGoal').value||'').toLowerCase().match(/(\d{1,2})\s*h\s*(\d{1,2})?/);return m?(+m[1])*60+(+m[2]||0):0;}
+function saveFc(){const m=+$('fcMass').value;if(m>=35&&m<=150)put('fcMass',m);put('fcCda',+$('fcCda').value||0.36);renderForecast();}
+function applyFocus(v,n){$('focus').value=v;put('focus',v);toast('Priorité « '+n+' » enregistrée : elle s’applique au prochain planning généré.');}
+function renderForecast(){const el=$('forecastBox');if(!el)return;
+ const r=raceFor(iso(mondayOf()));
+ if(!r){el.innerHTML='<p class="muted">Ajoute ta course dans « Ma saison » pour activer la prévision.</p>';return;}
+ if(!RACE_D[r.type]){el.innerHTML='<p class="muted">La prévision couvre les formats 70.3 et Ironman. Choisis l’un des deux comme type de « '+esc(r.name)+' » dans Ma saison.</p>';return;}
+ const ir=r.type==='Ironman',css=curCSS(),ftp=curFtp(false),hm=curRunHM();
+ const tr=get('tests',[]).filter(t=>t.type==='run').sort((a,b)=>a.date<b.date?-1:1).pop();
+ const run=tr?tr.value*(ir?1.23:1.10):hm?hm*(ir?1.12:1):0;
+ const miss=[];if(!(css>0))miss.push('ta CSS ou ta vitesse max en natation');if(!(run>0))miss.push('ton allure semi ou un test de course');
+ const mass=+get('fcMass',70)||70,cda=+get('fcCda',0.36)||0.36;
+ const ctl=`<div class="grid"><div><label for="fcMass">Poids du triathlète (kg)</label><input id="fcMass" type="number" min="35" max="150" value="${mass}" onchange="saveFc()"></div><div><label for="fcCda">Position sur le vélo</label><select id="fcCda" onchange="saveFc()"><option value="0.36"${cda>0.34?' selected':''}>Vélo de route</option><option value="0.31"${cda<=0.34?' selected':''}>Position aéro</option></select></div></div>`;
+ if(miss.length){el.innerHTML=`<p class="muted">Pour estimer ton temps, renseigne ${miss.join(' et ')} dans le Profil.</p>`+ctl+courseHtml(r);return;}
+ const base=Object.assign({css:css*(ir?1.07:1.04),ftp,run,mass:mass+9,cda,ifa:ir?0.70:0.78,swf:1,rnf:1},courseParams(r));
+ const mk=o=>fcTimes(r.type,Object.assign({},base,o)),M=mk({}),O=mk({swf:.97,ifa:base.ifa+.03,rnf:.97}),C=mk({swf:1.03,ifa:base.ifa-.03,rnf:1.04});
+ const g=goalMin(),cell=(a,b)=>`<tr><td>${a}</td><td>${b[0]}</td><td>${b[1]}</td></tr>`;
+ let h=`<p><strong>${esc(r.name)} · ${r.type} : environ ${fmtT(M.tot)}</strong><br><span class="muted">Fourchette ${fmtT(O.tot)} à ${fmtT(C.tot)}</span></p>`;
+ h+=`<table><thead><tr><th></th><th>Temps</th><th>Base</th></tr></thead><tbody>${cell('Natation',[fmtT(M.sw),fmtPace(base.css)+' /100 m'])}${cell('Vélo',[fmtT(M.bk),Math.round(M.w)+' W · '+(M.v*3.6).toFixed(1).replace('.',',')+' km/h'])}${cell('Course',[fmtT(M.rn),fmtPace(M.pace)+' /km'])}${cell('Transitions',[fmtT(M.tr),''])}</tbody></table>`;
+ if(g){const d=Math.round(M.tot/60-g);h+=`<p>${d>0?`Objectif de ${fmtT(g*60)} : il manque environ <strong>${d} min</strong> sur l’estimation centrale.`:`Objectif de ${fmtT(g*60)} : tu as environ <strong>${-d} min</strong> de marge sur l’estimation centrale.`}</p>`;}
+ const L=[['Natation','swim',mk({css:base.css-3}),'−3 s/100 m'],['Vélo','bike',mk({ftp:ftp*1.04}),'+4 % de FTP'],['Course','run',mk({run:run-6}),'−6 s/km']].map(a=>({n:a[0],f:a[1],g:(M.tot-a[2].tot)/60,t:a[3]})).sort((a,b)=>b.g-a.g);
+ h+=`<h3 style="margin:10px 0 4px">Où gagner du temps</h3><table><tbody>${L.map(x=>`<tr><td>${x.n}</td><td>${x.t}</td><td>≈ −${x.g.toFixed(1).replace('.',',')} min</td></tr>`).join('')}</tbody></table><p class="hint">Gains typiques sur un bloc de préparation : ce sont des ordres de grandeur, pas une promesse.</p><div class="actions"><button class="secondary" onclick="applyFocus('${L[0].f}','${L[0].n}')">Prioriser : ${L[0].n}</button></div>`;
+ const f=ir?[65,80]:[60,75],hf=1-0.003*Math.max(0,(base.temp||0)-25),ws=Math.round(base.ifa*ftp*hf*0.97),we=Math.round(base.ifa*ftp*hf*1.03),hot=(base.temp||0)>=25,ml=hot?'700–900':'600–750',hasC=!!(base.segs||base.rgain||base.temp||base.wind>1||base.wet<1);
+ const extra=(hot?`<br>• Chaleur (${base.temp} °C) : puissance cible réduite d’environ ${Math.round((1-hf)*100)} %, boisson fraîche aux ravitaillements, eau sur la nuque, premiers km de course plus prudents. Acclimatation : dans les 2 semaines avant, 4 à 5 séances faciles de 45 à 60 min par temps chaud.`:'')+(base.segs?'<br>• Montées : reste à ta puissance cible (pas plus de +10 %) et récupère dans les descentes.':''),cd=hasC?'Estimation avec le parcours et les conditions saisis. ':'Estimation sur parcours plat, sans vent ni chaleur : renseigne ton parcours ci-dessous. ';
+ h+=`<h3 style="margin:10px 0 4px">Fiche de course</h3><p>• Natation : ${fmtPace(base.css)} /100 m, départ prudent pour ne pas monter en intensité.<br>• Vélo : ${ws}–${we} W (${Math.round(base.ifa*100)} % de ta FTP), sans dépasser dans les bosses.<br>• Course : ${fmtPace(M.pace)} /km, les 3 premiers km ≈ 10 s/km plus lents.<br>• Ravitaillement : ${f[0]}–${f[1]} g de glucides/h et ${ml} ml/h, surtout sur le vélo.${extra}</p><p class="hint">${cd}Teste puissance, allures et ravitaillement pendant tes longs enchaînements, et ajuste selon ta tolérance digestive et la chaleur.</p>`;
+ el.innerHTML=h+ctl+courseHtml(r);}
+const swimTechDefault=()=>mkS('Natation','Natation technique',45,'300 m d’échauffement en {Z2} · 6 × 50 m éducatifs, récupération 20 s · 6 × 100 m de nage régulière en {Z3}, récupération 20 s · 200 m de retour au calme','Facile',{steps:[
+  {name:'Échauffement',items:[{cue:'Facile',mtr:300,z:'Z2'}]},
+  {name:'Éducatifs',reps:6,items:[{cue:'Éducatif',mtr:50,z:'Z2'},{rest:true,sec:20}]},
+  {name:'Nage régulière',reps:6,items:[{cue:'Régulier',mtr:100,z:'Z3'},{rest:true,sec:20}]},
+  {name:'Retour au calme',items:[{cue:'Souple',mtr:200,z:'Z2'}]}]});
+// ---- 2.20.11 : défauts de nage, matériel et séances techniques ciblées ----
+const SWIM_GEAR={pull:'Pull-buoy',plaq:'Plaquettes',palmes:'Palmes',tuba:'Tuba frontal'};
+const SWIM_FLAWS={
+ jambes:{l:'Jambes qui coulent, corps trop incliné',s:'jambes basses',cue:'regard vers le fond, bassin haut, corps gainé',d:[
+  {n:'Battements sur le côté',h:'bras du dessous tendu, tête relâchée, 6 battements puis changement de côté'},
+  {n:'Poussée ventrale glissée',h:'poussée du mur, corps aligné, tête neutre, glisse jusqu’à l’arrêt'},
+  {n:'Nage avec pull-buoy',h:'garde le bassin haut avec un battement discret',e:'pull'}]},
+ croise:{l:'Main qui croise devant la tête',s:'entrée de main',cue:'entrée de la main dans l’axe de l’épaule',d:[
+  {n:'Nage en rattrapage',h:'une main attend l’autre devant, entrée dans l’axe de l’épaule'},
+  {n:'Nage sur rails',h:'imagine deux rails devant toi : chaque main entre sur son rail sans croiser'}]},
+ respi:{l:'Respiration : la tête se lève',s:'respiration',cue:'une oreille dans l’eau, regard sur le côté',d:[
+  {n:'Battements sur le côté avec respiration',h:'une oreille et une lunette dans l’eau, respire sans lever la tête'},
+  {n:'Nage respiration tous les 3 mouvements',h:'respire alternativement de chaque côté'},
+  {n:'Nage au tuba frontal',h:'tête fixe, concentre-toi sur la rotation du corps',e:'tuba'}]},
+ rotation:{l:'Rotation insuffisante, nage à plat',s:'rotation',cue:'hanches et épaules tournent ensemble',d:[
+  {n:'Six battements, trois bras',h:'6 battements sur le côté, 3 mouvements de bras, puis changement de côté'},
+  {n:'Nage avec pause de rotation',h:'à chaque mouvement, marque une courte pause sur le côté avant de repartir'}]},
+ appui:{l:'Appui faible, le bras glisse dans l’eau',s:'appui',cue:'avant-bras à la verticale, pousse l’eau vers l’arrière',d:[
+  {n:'Godille',h:'bras tendus devant, petits mouvements des avant-bras pour sentir l’appui'},
+  {n:'Nage poings fermés',h:'nage poings fermés pour sentir l’avant-bras, puis mains ouvertes'},
+  {n:'Nage avec plaquettes',h:'cherche l’appui dès l’entrée de la main, sans forcer sur les épaules',e:'plaq'}]},
+ battements:{l:'Battements de jambes trop amples ou cassés',s:'battements',cue:'battements courts depuis les hanches, chevilles souples',d:[
+  {n:'Battements sur le dos',h:'jambes depuis les hanches, genoux discrets, chevilles relâchées'},
+  {n:'Battements avec palmes',h:'battements courts et rapides, pointes de pieds tendues',e:'palmes'}]},
+ glisse:{l:'Manque de glisse, trop de coups de bras',s:'glisse',cue:'allonge chaque mouvement et compte tes coups de bras par longueur',d:[
+  {n:'Comptage de mouvements',h:'compte tes coups de bras par longueur et cherche à en gagner un'},
+  {n:'Poussée et glisse',h:'après chaque poussée du mur, glisse jusqu’à retrouver ta vitesse de nage'}]},
+ poussee:{l:'Fin de poussée courte',s:'fin de poussée',cue:'termine le geste jusqu’à la cuisse',d:[
+  {n:'Nage pouce à la cuisse',h:'le pouce frôle la cuisse à chaque mouvement, bras bien étendu derrière'},
+  {n:'Nage avec plaquettes',h:'pousse jusqu’à l’extension complète du coude',e:'plaq'}]},
+ eaulibre:{l:'Orientation en eau libre',s:'eau libre',cue:'relève les yeux juste hors de l’eau, sans casser le rythme',d:[
+  {n:'Nage tête relevée',h:'4 mouvements tête hors de l’eau, puis reprends ta nage normale'},
+  {n:'Repérage tous les 8 mouvements',h:'regarde droit devant, puis replonge sans casser le rythme'}]}
+};
+function swimTechBuild(){
+ const F=get('swimFlaws',[]).filter(k=>SWIM_FLAWS[k]),note=String(get('swimFlawNote','')||'').trim();
+ if(!F.length)return swimTechDefault();
+ const gear=get('swimGear',[]),len=(+get('poolLen',25)>=50)?50:25,reps=len===50?3:4;
+ const wk=Math.floor(new Date((get('planStart','')||iso(new Date()))+'T12:00:00')/6048e5);
+ const picks=[F[wk%F.length]];if(F.length>1)picks.push(F[(wk+1)%F.length]);
+ const used=new Set(),blocks=[];
+ picks.forEach(k=>{const av=SWIM_FLAWS[k].d.filter(d=>!d.e||gear.includes(d.e));let c=0;
+  for(let j=0;j<av.length&&c<2;j++){const d=av[(wk+j)%av.length];if(!used.has(d.n)){used.add(d.n);blocks.push({d});c++;}}});
+ const easy=swimPaceMid('Z2',120),z3=swimPaceMid('Z3',110),dm=blocks.length*reps*len;
+ const min=Math.max(35,r5((500/100*easy+dm/100*easy*1.1+blocks.length*reps*15+4*(z3+20))/60));
+ const cue=SWIM_FLAWS[picks[0]].cue;
+ const desc=`300 m d’échauffement en {Z2}`+blocks.map(b=>` · ${reps} × ${len} m « ${b.d.n} » (${b.d.h}), récupération 15 s`).join('')+` · 4 × 100 m de nage régulière en {Z3}, récupération 20 s, en gardant : ${cue} · 200 m de retour au calme`+(note?` · Point d’attention : ${note}`:'');
+ const steps=[{name:'Échauffement',items:[{cue:'Facile',mtr:300,z:'Z2'}]}].concat(blocks.map(b=>({name:'Éducatif · '+b.d.n,reps,items:[{cue:b.d.n,mtr:len,z:'Z2'},{rest:true,sec:15}]})),[
+  {name:'Nage régulière',reps:4,items:[{cue:'Régulier',mtr:100,z:'Z3'},{rest:true,sec:20}]},
+  {name:'Retour au calme',items:[{cue:'Souple',mtr:200,z:'Z2'}]}]);
+ return mkS('Natation','Natation technique : '+picks.map(k=>SWIM_FLAWS[k].s).join(' et '),min,desc,'Facile',{steps});
+}
+function renderSwimTech(){const el=$('swimTechBox');if(!el)return;
+ const F=get('swimFlaws',[]),G=get('swimGear',[]),pl=(+get('poolLen',25)>=50)?50:25;
+ const cb=(n,id,lab,on)=>`<label style="display:flex;align-items:flex-start;gap:7px;font-weight:500;margin:6px 0"><input type="checkbox" data-${n}="${id}" style="width:auto;min-height:0;margin-top:3px"${on?' checked':''} onchange="saveSwimTech()"><span>${lab}</span></label>`;
+ el.innerHTML=`<p class="hint">Coche les défauts à travailler (ceux de ton coach, d’une vidéo ou que tu ressens). Les séances de natation technique des prochains plannings utilisent les éducatifs correspondants.</p><h3>Défauts de nage</h3>${Object.keys(SWIM_FLAWS).map(k=>cb('flaw',k,esc(SWIM_FLAWS[k].l),F.includes(k))).join('')}<label for="swimFlawNote">Autre défaut ou remarque du coach</label><textarea id="swimFlawNote" rows="2" onchange="saveSwimTech()">${esc(get('swimFlawNote',''))}</textarea><h3 style="margin-top:12px">Matériel disponible</h3>${Object.keys(SWIM_GEAR).map(k=>cb('gear',k,SWIM_GEAR[k],G.includes(k))).join('')}<label for="poolLen">Longueur du bassin</label><select id="poolLen" onchange="saveSwimTech()"><option value="25"${pl===25?' selected':''}>25 m</option><option value="50"${pl===50?' selected':''}>50 m</option></select><div id="swimTechPrev"></div><div class="actions"><button class="primary" onclick="addSwimTech()">Ajouter une séance technique à ma semaine</button></div>`;
+ swimTechPreview();}
+function saveSwimTech(){put('swimFlaws',[...document.querySelectorAll('[data-flaw]:checked')].map(e=>e.dataset.flaw));put('swimGear',[...document.querySelectorAll('[data-gear]:checked')].map(e=>e.dataset.gear));put('swimFlawNote',$('swimFlawNote').value.trim());put('poolLen',+$('poolLen').value||25);swimTechPreview();}
+function swimTechPreview(){const el=$('swimTechPrev');if(!el)return;const x=swimTechBuild();
+ el.innerHTML=`<h3 style="margin:12px 0 4px">Aperçu : ${esc(x.title)} (${x.min} min)</h3><p style="margin:0">• ${esc(x.desc).replace(/\{(Z\w)\}/g,'$1').split(' · ').join('<br>• ')}</p>`;}
+function addSwimTech(){
+ const ps=get('planStart','');if(!ps||!plan.length){alert('Génère d’abord ton planning de la semaine.');return;}
+ const t=ps===iso(mondayOf())?(new Date().getDay()+6)%7:-1,x=swimTechBuild();
+ x.day=Math.max(t,0);plan.push(x);const i=plan.length-1,c=shiftCands(i,t-1);
+ if(!c.length){plan.pop();alert('Aucun créneau natation libre cette semaine.');return;}
+ if(!confirm(`Ajouter « ${x.title} » le ${days[c[0]].toLowerCase()} ?`)){plan.pop();return;}
+ x.day=c[0];plan.sort((a,b)=>a.day-b.day);put('plan',plan);renderPlan();renderToday();refreshStats();toast('Séance technique ajoutée.');}
+// ---- 2.20.11 : intensité, bilan de semaine, répétition générale, renforcement par phase ----
+const bikeRG=ty=>f=>{const im=ty==='Ironman',base=im?180:100,work=r5(clamp(base*f,base*0.8,base*1.1)),warm=20,cool=10;
+ return mkS('Vélo','Répétition générale : vélo',warm+work+cool,`${warm} min d’échauffement progressif · ${work} min ${im?'à l’allure Ironman, haut de zone {Z2}':'à l’allure course {ZR}'}, nutrition et boisson exactement comme le jour J · ${cool} min de retour au calme · enchaîne tout de suite sur la course à pied à l’allure de course`,'Modéré',{long:true,quality:true,rg:true,steps:[
+  {name:'Échauffement',items:[{cue:'Progressif',min:warm,z:'Z2',ramp:true}]},
+  {name:'Bloc course',items:[{cue:'Allure course',min:work,z:im?'Z2':'ZR'}]},
+  {name:'Retour au calme',items:[{cue:'Souple',min:cool,z:'Z1'}]}]});};
+function strengthBuild(ph){const F=get('swimFlaws',[]),X=[];
+ if(['rotation','appui','poussee','croise'].some(k=>F.includes(k)))X.push('épaules et dos de nageur : 2 × 12 rotations externes à l’élastique et 2 × 10 tirages bras tendus');
+ if(['jambes','battements'].some(k=>F.includes(k)))X.push('bassin haut en nage : 2 × 12 ponts fessiers et 2 × 30 s de gainage dorsal');
+ const ex=X.length?' · '+X.join(' · '):'';
+ if(ph==='base')return mkS('Renforcement','Renforcement : force',40,'10 min de mobilité · 3 × 8 squats, fentes et soulevés de terre jambes tendues à charge modérée · 3 × 8 tirages à l’élastique · 3 × 30 s de gainage ventral et latéral'+ex+' · 5 min d’étirements','Modéré');
+ if(ph==='build')return mkS('Renforcement','Renforcement : force-endurance',35,'10 min de mobilité · 2 × 12 squats, fentes et ponts fessiers · 2 × 12 tirages à l’élastique · 2 × 40 s de gainage ventral et latéral'+ex+' · 5 min d’étirements','Modéré');
+ if(ph==='spec')return mkS('Renforcement','Renforcement : entretien',25,'10 min de mobilité · 2 × 10 squats et fentes légers · 2 × 10 tirages à l’élastique · 2 × 30 s de gainage'+ex,'Facile');
+ if(ph==='taper')return mkS('Renforcement','Renforcement léger',20,'10 min de mobilité · 1 à 2 séries légères de gainage et de ponts fessiers, sans fatigue musculaire','Facile');
+ return mkS('Renforcement','Renforcement général',30,'Gainage, stabilité, chaîne postérieure et mobilité, sans aller à l’échec'+ex,'Modéré');}
+function zoneBuckets(x){let e=0,t=0,h=0;
+ const add=(z,m)=>{if(z==='Z3'||z==='ZR')t+=m;else if(/^Z[4-6]$/.test(z))h+=m;else e+=m;};
+ if(Array.isArray(x.steps)&&x.steps.length)x.steps.forEach(st=>{const r=st.reps||1;(st.items||[]).forEach(it=>{
+  const m=it.min!=null?it.min:it.sec!=null?it.sec/60:it.mtr!=null?it.mtr*1.2/60:0;add(it.rest?'Z1':(it.z||'Z2'),m*r);});});
+ else{if(x.quality)h+=x.min;else e+=x.min;}
+ return {e,t,h};}
+function weekDist(){const dm=matchDone();let e=0,t=0,h=0;
+ plan.forEach((x,i)=>{if(!dm[i]||x.sport==='Renforcement'||x.event||x.opener)return;const b=zoneBuckets(x);e+=b.e;t+=b.t;h+=b.h;});
+ return {e:Math.round(e),t:Math.round(t),h:Math.round(h)};}
+function distMsg(e,t,h){const T=e+t+h;if(T<60)return null;const pe=Math.round(e/T*100),pt=Math.round(t/T*100),pd=100-pe-pt;
+ return {txt:`${pe} % facile · ${pt} % tempo · ${pd} % dur`,msg:pe<70?'Trop d’intensité : ralentis tes séances faciles, c’est là que se construit l’endurance.':pt>15?'Beaucoup de tempo (zone grise) : garde le facile vraiment facile et le dur vraiment dur.':'Répartition conforme à la cible d’environ 80 % de facile.'};}
+function distLine(){try{const D=get('distLog',{}),cm=mondayOf(),lo=new Date(cm);lo.setDate(lo.getDate()-21);let e=0,t=0,h=0;
+ Object.keys(D).forEach(ws=>{const a=mondayOf(ws);if(a>=lo&&a<=cm){e+=D[ws].e;t+=D[ws].t;h+=D[ws].h;}});
+ const m=distMsg(e,t,h);return m?`<p class="hint">Intensité des 4 dernières semaines (d’après la structure prévue des séances faites) : ${m.txt}. ${m.msg}</p>`:'';}catch(e){return '';}}
+function renderReview(){const el=$('reviewBox'),card=$('reviewCard');if(!el||!card)return;
+ const ps=get('planStart',''),idx=(new Date().getDay()+6)%7;
+ if(ps!==iso(mondayOf())||!plan.length||idx<5){card.style.display='none';return;}
+ const dm=matchDone(),an=get('analyses',{}),end=new Date(mondayOf());end.setDate(end.getDate()+6);
+ const W=workouts.filter(x=>x.date>=ps&&x.date<=iso(end));
+ const planned=plan.filter(x=>!x.event&&!x.opener).reduce((a,x)=>a+(x.orig?x.orig.min:x.min),0)+skippedMin(ps),done=W.reduce((a,x)=>a+(+x.duration||0),0),comp=planned?done/planned:0;
+ let n=0,nd=0,k=0,kd=0,hard=0,rg=null;
+ plan.forEach((x,i)=>{if(x.event||x.opener)return;const d=dm[i],key=!!(x.quality||x.long||x.test);n++;if(key)k++;
+  if(d){nd++;if(key)kd++;const a=d.ext?an[d.ext]:null;if(a&&a.hard)hard++;if(x.rg)rg={a};}else if(x.rg)rg={a:null};});
+ const rp=W.map(x=>+x.rpe).filter(v=>v>0),fl=W.map(x=>+x.feel).filter(v=>v>0),rpe=rp.length?rp.reduce((a,v)=>a+v,0)/rp.length:null,feel=fl.length?fl.reduce((a,v)=>a+v,0)/fl.length:null;
+ const fh=m=>(m/60).toFixed(1).replace('.',',')+' h',f1=v=>v.toFixed(1).replace('.',',');
+ const dec=[];
+ if(comp<0.6||(rpe!=null&&rpe>=8)||(feel!=null&&feel>=4))dec.push('Semaine trop lourde ou trop incomplète : la charge de la semaine prochaine sera allégée d’environ 10 %.');
+ else if(comp>=0.85&&rpe!=null&&rpe<=6.5&&(feel==null||feel<=3))dec.push('Semaine bien tenue : la charge peut monter d’environ 5 %.');
+ else dec.push('Charge maintenue pour la semaine prochaine.');
+ if(kd<k)dec.push(`${k-kd} séance(s) clé(s) non faite(s) : vérifie si les créneaux étaient réalistes.`);
+ if(hard)dec.push(`${hard} séance(s) plus dure(s) que prévu : garde les séances faciles bien faciles.`);
+ const dd=weekDist(),dm2=distMsg(dd.e,dd.t,dd.h);if(dm2)dec.push(dm2.msg);
+ const rgl=rg?`<p>Répétition générale : ${rg.a?esc(rg.a.short||String(rg.a.verdict).split('. ')[0]):'pas encore faite.'}</p>`:'';
+ card.style.display='';
+ el.innerHTML=`<p><strong>${Math.round(comp*100)} %</strong> du volume prévu (${fh(done)} sur ${fh(planned)}) · ${nd}/${n} séances · ${kd}/${k} séances clés${rpe!=null?` · RPE moyen ${f1(rpe)}`:''}</p>${rgl}${dec.map(t=>`<div>• ${esc(t)}</div>`).join('')}<p class="hint">La charge est ajustée quand tu génères le planning suivant.</p>`;}
+function logPlanWeek(){const ps=get('planStart','');if(!ps||!Array.isArray(plan))return;
+ const P=plan.filter(x=>!x.event&&!x.opener),v={n:P.length,min:P.reduce((a,x)=>a+(+x.min||0),0)},L=get('planLog',{});
+ if(!L[ps]||L[ps].n!==v.n||L[ps].min!==v.min){L[ps]=v;Object.keys(L).sort().slice(0,-12).forEach(q=>delete L[q]);put('planLog',L);}
+ try{if(ps<=iso(mondayOf())){const d=weekDist(),D=get('distLog',{}),o=D[ps];if(!o||o.e!==d.e||o.t!==d.t||o.h!==d.h){D[ps]=d;Object.keys(D).sort().slice(0,-12).forEach(q=>delete D[q]);put('distLog',D);}}}catch(e){}}
+function adherenceTxt(){try{const L=get('planLog',{}),cm=mondayOf(),lo=new Date(cm);lo.setDate(lo.getDate()-28);let pl=0,dn=0,w=0;
+ Object.keys(L).forEach(ws=>{const a=mondayOf(ws);if(!(a<cm&&a>=lo)||!(L[ws].min>0))return;const e=new Date(a);e.setDate(e.getDate()+6);
+  const m=workouts.filter(x=>x.date>=ws&&x.date<=iso(e)).reduce((t,x)=>t+(+x.duration||0),0);pl+=L[ws].min;dn+=Math.min(m,L[ws].min);w++;});
+ return pl?` · Régularité : ${Math.round(dn/pl*100)} % du volume prévu (${w} semaine${w>1?'s':''} complète${w>1?'s':''})`:'';}catch(e){return '';}}
+function monthlyHtml(){try{
+ const t0=new Date();t0.setHours(0,0,0,0);const d=x=>x.date?Math.round((t0-new Date(x.date+'T00:00:00'))/864e5):-1;
+ const per=(a,b)=>workouts.filter(x=>{const k=d(x);return k>=a&&k<b;});
+ const cur=per(0,28),prv=per(28,56);if(!cur.length&&!prv.length)return '';
+ const H=(L,s)=>L.filter(x=>!s||x.sport===s).reduce((a,x)=>a+(+x.duration||0),0)/60;
+ const R=L=>{const r=L.map(x=>+x.rpe).filter(v=>v>0);return r.length?r.reduce((a,v)=>a+v,0)/r.length:null;};
+ const f=v=>v.toFixed(1).replace('.',',')+' h';
+ const dl=(a,b)=>{if(!b)return a?'nouveau':'–';const q=Math.round((a-b)/b*100);return (q>=0?'+':'−')+Math.abs(q)+' %';};
+ const rows=[['Total',null],['Natation','Natation'],['Vélo','Vélo'],['Course','Course']].map(([n,sp])=>{const a=H(cur,sp),b=H(prv,sp);return `<tr><td>${n}</td><td>${f(a)}</td><td>${f(b)}</td><td>${dl(a,b)}</td></tr>`;}).join('');
+ const ra=R(cur),rb=R(prv),fm=v=>v.toFixed(1).replace('.',',');
+ return `<h3 style="margin:0 0 6px">Bilan des 4 dernières semaines</h3><table><thead><tr><th></th><th>4 sem.</th><th>Avant</th><th>Écart</th></tr></thead><tbody>${rows}</tbody></table><p class="hint">${cur.length} séance(s) contre ${prv.length} sur les 4 semaines d’avant${ra?` · RPE moyen ${fm(ra)}${rb?` (avant ${fm(rb)})`:''}`:''}${adherenceTxt()}.</p>${distLine()}<div style="height:10px"></div>`;
+}catch(e){return '';}}
+function renderTrends(){renderTrends0();const el=$('trendBox');if(el)el.insertAdjacentHTML('afterbegin',monthlyHtml());}
+function renderTrends0(){
  const el=$('trendBox');if(!el)return;
  const rows=[],row=(label,vals,fmt,lowerBetter,unit)=>{
   if(!vals.length)return;

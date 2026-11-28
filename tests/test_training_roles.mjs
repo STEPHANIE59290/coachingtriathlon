@@ -60,7 +60,7 @@ test('le catalogue applique les rôles explicitement sans déduire du titre ou d
     () => ({ title: 'Séance facile', min: 40 }),
   ];
   const tagged = c.tagTrainingCatalog(factories, ['support', 'key', 'easy']).map(fn => fn(1));
-  assert.deepEqual(tagged.map(x => x.trainingRole), ['support', 'key', 'easy']);
+  assert.deepEqual(Array.from(tagged, x => x.trainingRole), ['support', 'key', 'easy']);
 });
 
 test('Ironman et 70.3 identifient des séances prioritaires différentes en phase spécifique', () => {

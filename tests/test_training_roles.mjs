@@ -131,3 +131,48 @@ test('les scripts JavaScript intégrés à index.html sont syntaxiquement valide
   assert.ok(scripts.length > 0, 'Aucun script JavaScript intégré détecté');
   scripts.forEach((source, index) => new vm.Script(source, { filename: 'index.html:inline-script-' + (index + 1) }));
 });
+
+test('un athlète peut corriger le rôle de sa séance dans son propre planning', () => {
+  const start = html.indexOf('function setTrainingRole(');
+  const end = html.indexOf('function applyAdaptiveWeek(', start);
+  assert.ok(start >= 0 && end > start, 'Fonction setTrainingRole introuvable dans index.html');
+  const stored = [];
+  const context = {
+    plan: [{ title: 'Vélo spécifique', trainingRole: 'support' }],
+    put(key, value) { stored.push([key, structuredClone(value)]); },
+    renderPlan() {},
+    toast() {},
+  };
+  vm.createContext(context);
+  vm.runInContext(html.slice(start, end), context, { timeout: 1000 });
+  context.setTrainingRole(0, 'key');
+  assert.equal(context.plan[0].trainingRole, 'key');
+  assert.equal(stored.at(-1)[0], 'plan');
+});
+
+test('la correction du rôle pendant une adaptation modifie le rôle initial, pas la séance facile affichée', () => {
+  const start = html.indexOf('function setTrainingRole(');
+  const end = html.indexOf('function applyAdaptiveWeek(', start);
+  const context = {
+    plan: [{ title: 'Course clé', trainingRole: 'easy', adapted: true, orig: { trainingRole: 'key' } }],
+    put() {}, renderPlan() {}, toast() {},
+  };
+  vm.createContext(context);
+  vm.runInContext(html.slice(start, end), context, { timeout: 1000 });
+  context.setTrainingRole(0, 'support');
+  assert.equal(context.plan[0].trainingRole, 'easy');
+  assert.equal(context.plan[0].orig.trainingRole, 'support');
+});
+
+test('un rôle invalide ne modifie pas le planning', () => {
+  const start = html.indexOf('function setTrainingRole(');
+  const end = html.indexOf('function applyAdaptiveWeek(', start);
+  const context = {
+    plan: [{ title: 'Séance', trainingRole: 'support' }],
+    put() {}, renderPlan() {}, toast() {},
+  };
+  vm.createContext(context);
+  vm.runInContext(html.slice(start, end), context, { timeout: 1000 });
+  context.setTrainingRole(0, 'admin');
+  assert.equal(context.plan[0].trainingRole, 'support');
+});

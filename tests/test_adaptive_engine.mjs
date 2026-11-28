@@ -38,7 +38,7 @@ function fixture({ workouts = [], rdLog = {}, plan = [], done = [] } = {}) {
     iso(d) { return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10); },
     matchDone() { return done.slice(); },
     planDayISO(x) { return x.date || dateOffset(x.offset || 1); },
-    easyLike(x, min) { return { ...x, min, quality: false, long: false, intensity: 'Facile', title: 'Séance facile' }; },
+    easyLike(x, min) { return { ...x, min, quality: false, long: false, trainingRole: 'easy', intensity: 'Facile', title: 'Séance facile' }; },
     toast(message) { messages.push(message); },
     renderPlan() {}, refreshStats() {}, renderToday() {},
     Object, Date, Math, Set, String, Number,
@@ -116,6 +116,61 @@ test('séances réalisées, événements, openers et séances faciles restent in
   f.context.applyAdaptiveWeek();
   assert.equal(f.context.plan[0].adaptive7d, true);
   for (let i = 1; i < original.length; i++) assert.deepEqual(f.context.plan[i], original[i]);
+});
+
+
+test('fatigue générale : les séances support sont allégées avant les séances key', () => {
+  const original = [
+    futurePlan('Vélo', { trainingRole: 'key' }),
+    futurePlan('Course', { trainingRole: 'support' }),
+    futurePlan('Natation', { trainingRole: 'easy' }),
+    futurePlan('Course', { trainingRole: 'unclassified' }),
+  ];
+  const f = fixture({ plan: original, rdLog: redLog(3) });
+  f.context.applyAdaptiveWeek();
+  assert.equal(f.context.plan[0].adaptive7d, undefined, 'la séance clé est préservée');
+  assert.equal(f.context.plan[1].adaptive7d, true, 'la séance support est allégée');
+  assert.equal(f.context.plan[1].trainingRole, 'easy', 'la séance transformée devient facile');
+  assert.equal(f.context.plan[2].adaptive7d, undefined, 'la séance facile reste intacte');
+  assert.equal(f.context.plan[3].adaptive7d, undefined, 'la séance non classée reste intacte');
+});
+
+test('fatigue locale : la sélection support est limitée à la discipline concernée', () => {
+  const original = [
+    futurePlan('Course', { trainingRole: 'key' }),
+    futurePlan('Course', { trainingRole: 'support' }),
+    futurePlan('Vélo', { trainingRole: 'support' }),
+  ];
+  const f = fixture({
+    plan: original,
+    workouts: [session('Course', { rpe: 9 }), session('Course', { rpe: 9, date: dateOffset(-2) })],
+  });
+  f.context.applyAdaptiveWeek();
+  assert.equal(f.context.plan[0].adaptive7d, undefined);
+  assert.equal(f.context.plan[1].adaptive7d, true);
+  assert.equal(f.context.plan[2].adaptive7d, undefined);
+});
+
+test('signal rouge sans séance support : une séance key peut être allégée en second recours', () => {
+  const original = [futurePlan('Course', { trainingRole: 'key' }), futurePlan('Vélo', { trainingRole: 'easy' })];
+  const f = fixture({ plan: original, rdLog: redLog(3) });
+  f.context.applyAdaptiveWeek();
+  assert.equal(f.context.plan[0].adaptive7d, true);
+  assert.equal(f.context.plan[1].adaptive7d, undefined);
+});
+
+test('signal orange sans séance support : les séances key restent intactes', () => {
+  const original = [futurePlan('Course', { trainingRole: 'key' })];
+  const f = fixture({ plan: original, rdLog: redLog(2) });
+  f.context.applyAdaptiveWeek();
+  assert.deepEqual(f.context.plan, original);
+});
+
+test('séance sans rôle : jamais sélectionnée sur la seule base de quality, long ou durée', () => {
+  const original = [futurePlan('Course', { trainingRole: undefined, min: 180, long: true })];
+  const f = fixture({ plan: original, rdLog: redLog(3) });
+  f.context.applyAdaptiveWeek();
+  assert.deepEqual(f.context.plan, original);
 });
 
 test('annulation : restaure exactement le plan initial', () => {

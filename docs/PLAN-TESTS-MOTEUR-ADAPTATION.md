@@ -2,7 +2,25 @@
 
 Branche : `dev/tests-moteur-adaptation`  
 Périmètre : moteur `adaptiveWeekSignal()`, `applyAdaptiveWeek()` et `undoAdaptiveWeek()`  
-Statut : plan de validation à implémenter ; les scénarios ci-dessous ne sont pas encore exécutés.
+Statut : première suite unitaire automatisée exécutée avec succès (18 tests sur 18, GitHub Actions run 46133168304). Les scénarios du présent document ne sont pas tous automatisés : les tests d’intégration, multi-athlètes, synchronisation et règles spécifiques Ironman / Half-Ironman restent à réaliser.
+
+## État de la couverture automatisée
+
+Le fichier `tests/test_adaptive_engine.mjs` extrait les fonctions du moteur directement depuis `index.html` et les exécute sur des données synthétiques, sans réseau ni Supabase.
+
+Couverture unitaire actuellement validée :
+- semaine normale, fatigue localisée, douleur 4/10 et bilans rouges ;
+- protection des séances réalisées, événements, openers et séances faciles ;
+- annulation exacte d'une adaptation ;
+- données de récupération absentes et tendance RPE ;
+- douleur 2/3/4, RPE 7/8/9, répétition des efforts élevés et forme basse ;
+- adhérence sous / au seuil de 60 % ;
+- volume effectué à 124 %, 125 % et 126 % ;
+- seuils de bilans rouges et orange.
+
+Dernière exécution : 18 réussites, 0 échec. Cela valide les règles unitaires simulées, pas le comportement de l'application en production.
+
+Constat de l'inspection du code : `adaptiveWeekSignal()` et `applyAdaptiveWeek()` n'appliquent actuellement aucune différenciation selon l'objectif Ironman ou Half-Ironman. Les scénarios IM01 à HM03 et OBJ01 restent donc des exigences métier à définir et valider avant d'être automatisés ; ils ne constituent pas encore des comportements existants.
 
 ## 1. Objectifs et règles de sécurité
 

@@ -1735,6 +1735,13 @@ function missedHtml(){try{
 function missedMove(i,d){if(!plan[i])return;plan[i]=Object.assign({},plan[i],{day:d,moved:true});put('plan',plan);renderPlan();renderToday();refreshStats();}
 function missedDrop(i){const x=plan[i];if(!x)return;const ps=get('planStart',''),base=x.orig||x,k=get('skipped',null);
  put('skipped',{week:ps,min:(k&&k.week===ps?(+k.min||0):0)+base.min});plan.splice(i,1);put('plan',plan);renderPlan();renderToday();refreshStats();}
+function trainingRoleControlHtml(i,x,done){
+ if(!x||x.event||x.opener||done)return '';
+ const source=x.orig&&typeof x.orig==='object'?x.orig:x;
+ const role=normalizeTrainingRole(source.trainingRole);
+ const label=x.orig?'Rôle initial':'Rôle';
+ return `<div style="display:flex;align-items:center;gap:7px;margin:7px 0 2px"><span class="muted" style="font-size:12px">${label}</span><select aria-label="Rôle de la séance" onchange="setTrainingRole(${i},this.value)" style="width:auto;min-width:132px;min-height:32px;padding:4px 8px;font-size:12px"><option value="key"${role==='key'?' selected':''}>Clé</option><option value="support"${role==='support'?' selected':''}>Soutien</option><option value="easy"${role==='easy'?' selected':''}>Facile</option><option value="unclassified"${role==='unclassified'?' selected':''}>À classer</option></select></div>`;
+}
 function dayLabel(i){const ps=get('planStart','');if(!ps)return '';const d=mondayOf(ps);d.setDate(d.getDate()+i);return d.toLocaleDateString('fr-FR',{day:'numeric',month:'short'});}
 function renderPlan(){try{syncSpecialWeek();}catch(e){}
  renderIntervals();try{logPlanWeek();}catch(e){}try{renderTrainer();}catch(e){}{const sw=$('planSwitch');if(sw)sw.innerHTML=planSwitchHtml()+missedHtml();}
@@ -1753,7 +1760,7 @@ function renderPlan(){try{syncSpecialWeek();}catch(e){}
  const doneHtml=nDone?`<div class="hint" style="margin-bottom:10px">Réalisé : <strong>${nDone}/${plan.length}</strong> séances, ${doneMin} min sur ${plan.reduce((a,x)=>a+x.min,0)} min prévues.</div>`:'';
  el.innerHTML=stale+phaseBannerHtml()+notesHtml+missHtml+doneHtml+days.map((d,i)=>{
   const p=plan.filter(x=>x.day===i),dl=dayLabel(i);
-  return `<div style="margin:8px 0"><strong>${d}</strong>${dl?` <span class="muted">· ${esc(dl)}</span>`:''}${p.length?p.map(x=>`<div class="session"><span class="pill">${esc(x.sport)}</span>${x.indoor?'<span class="pill">Home trainer</span>':''}<strong>${esc(x.title)}${x.event?'':' · '+x.min+' min'}</strong>${zoneTarget(x.sport,x.zone,x.indoor)?`<p class="muted" style="margin:2px 0 0">Cible : ${esc(zoneTarget(x.sport,x.zone,x.indoor))}</p>`:''}<p>${esc(fillZones(x.sport,x.desc,x.indoor))}</p>${fuelHtml(x)}<small>Intensité : ${esc(x.intensity)} · Séance indicative${x.adapted?' · <strong style="color:var(--orange)">adaptée à ton bilan</strong>':''}</small>${doneMap[plan.indexOf(x)]?`<p style="margin:6px 0 0;color:var(--green);font-weight:600">✔ Réalisée : ${doneMap[plan.indexOf(x)].duration} min (prévu ${x.min})${doneMap[plan.indexOf(x)].shifted?' · un autre jour':''}${doneExtra(doneMap[plan.indexOf(x)])}</p>`:''}${anaHtml(plan.indexOf(x),x,doneMap[plan.indexOf(x)])}${(x.event||x.opener||doneMap[plan.indexOf(x)])?'':`<div class="actions" style="margin-top:6px"><button class="secondary" onclick="skipSession(${plan.indexOf(x)})">Je n’ai pas pu</button></div>`}</div>`).join(''):'<p class="muted">Repos / récupération</p>'}</div>`;
+  return `<div style="margin:8px 0"><strong>${d}</strong>${dl?` <span class="muted">· ${esc(dl)}</span>`:''}${p.length?p.map(x=>`<div class="session"><span class="pill">${esc(x.sport)}</span>${x.indoor?'<span class="pill">Home trainer</span>':''}<strong>${esc(x.title)}${x.event?'':' · '+x.min+' min'}</strong>${trainingRoleControlHtml(plan.indexOf(x),x,doneMap[plan.indexOf(x)])}${zoneTarget(x.sport,x.zone,x.indoor)?`<p class="muted" style="margin:2px 0 0">Cible : ${esc(zoneTarget(x.sport,x.zone,x.indoor))}</p>`:''}<p>${esc(fillZones(x.sport,x.desc,x.indoor))}</p>${fuelHtml(x)}<small>Intensité : ${esc(x.intensity)} · Séance indicative${x.adapted?' · <strong style="color:var(--orange)">adaptée à ton bilan</strong>':''}</small>${doneMap[plan.indexOf(x)]?`<p style="margin:6px 0 0;color:var(--green);font-weight:600">✔ Réalisée : ${doneMap[plan.indexOf(x)].duration} min (prévu ${x.min})${doneMap[plan.indexOf(x)].shifted?' · un autre jour':''}${doneExtra(doneMap[plan.indexOf(x)])}</p>`:''}${anaHtml(plan.indexOf(x),x,doneMap[plan.indexOf(x)])}${(x.event||x.opener||doneMap[plan.indexOf(x)])?'':`<div class="actions" style="margin-top:6px"><button class="secondary" onclick="skipSession(${plan.indexOf(x)})">Je n’ai pas pu</button></div>`}</div>`).join(''):'<p class="muted">Repos / récupération</p>'}</div>`;
  }).join('');
  {const cur=iso(mondayOf()),other=!!ps&&ps!==cur,t=$('homePlanTitle');
  if(t)t.textContent=other?'Semaine du '+mondayOf(ps).toLocaleDateString('fr-FR',{day:'numeric',month:'long'})+(ps>cur?' (à venir)':' (passée)'):'Cette semaine';
@@ -1954,6 +1961,15 @@ function adaptiveWeekSignal(){
 function adaptiveRoleOf(session){
  const role=String(session&&session.trainingRole||'').toLowerCase();
  return ['key','support','easy'].includes(role)?role:'unclassified';
+}
+function setTrainingRole(i,role){
+ if(!['key','support','easy','unclassified'].includes(role)){toast('Rôle de séance invalide.');return;}
+ const x=plan[i];if(!x||x.event||x.opener)return;
+ // Si la séance est temporairement adaptée, corriger son rôle d'origine
+ // afin que l'annulation conserve la correction sans annuler l'adaptation.
+ if(x.orig&&typeof x.orig==='object')x.orig.trainingRole=role;
+ else x.trainingRole=role;
+ put('plan',plan);renderPlan();toast('Rôle de séance enregistré.');
 }
 function applyAdaptiveWeek(){
  const st=adaptiveWeekSignal();if(st.painMax>=4){toast('Douleur ≥ 4/10 : pas d’adaptation automatique. Évalue la douleur et demande un avis médical si elle est importante ou persistante.');return;}

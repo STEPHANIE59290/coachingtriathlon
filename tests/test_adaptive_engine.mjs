@@ -39,6 +39,7 @@ function fixture({ workouts = [], rdLog = {}, plan = [], done = [] } = {}) {
     matchDone() { return done.slice(); },
     planDayISO(x) { return x.date || dateOffset(x.offset || 1); },
     easyLike(x, min) { return { ...x, min, quality: false, long: false, trainingRole: 'easy', intensity: 'Facile', title: 'Séance facile' }; },
+    injuryAlt() { return null; },
     toast(message) { messages.push(message); },
     renderPlan() {}, refreshStats() {}, renderToday() {},
     Object, Date, Math, Set, String, Number,
@@ -171,6 +172,28 @@ test('séance sans rôle : jamais sélectionnée sur la seule base de quality, l
   const f = fixture({ plan: original, rdLog: redLog(3) });
   f.context.applyAdaptiveWeek();
   assert.deepEqual(f.context.plan, original);
+});
+
+
+test('proposition quotidienne : amber allège support mais préserve key, easy et unclassified', () => {
+  const { context } = fixture();
+  const support = futurePlan('Course', { trainingRole: 'support' });
+  const key = futurePlan('Vélo', { trainingRole: 'key' });
+  const easy = futurePlan('Natation', { trainingRole: 'easy' });
+  const unknown = futurePlan('Course', { trainingRole: undefined });
+  const state = { level: 'amber', t: 0 };
+  assert.equal(context.proposeFor(support, state).trainingRole, 'easy');
+  assert.equal(context.proposeFor(key, state), null);
+  assert.equal(context.proposeFor(easy, state), null);
+  assert.equal(context.proposeFor(unknown, state), null);
+});
+
+test('proposition quotidienne : rouge permet aussi de réduire une séance key', () => {
+  const { context } = fixture();
+  const key = futurePlan('Vélo', { trainingRole: 'key' });
+  const proposal = context.proposeFor(key, { level: 'red', t: 0 });
+  assert.equal(proposal.trainingRole, 'easy');
+  assert.equal(proposal.min, 45);
 });
 
 test('annulation : restaure exactement le plan initial', () => {

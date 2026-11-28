@@ -406,7 +406,7 @@ function sbWipeLocal(all,keepDevice){for(let i=localStorage.length-1;i>=0;i--){c
 function sbApply(kv){
  const snap={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith('half04_')&&k!=='half04_preMigration'&&k!=='half04_sbSession')snap[k]=localStorage.getItem(k);}
  try{localStorage.setItem('half04_preMigration',JSON.stringify({from:'sync',at:new Date().toISOString(),data:snap}));}catch(e){}
- sbWipeLocal(false);Object.keys(kv).forEach(n=>{try{localStorage.setItem('half04_'+n,kv[n]);}catch(e){}});
+ sbWipeLocal(false);Object.keys(kv).filter(n=>!SB_LOCAL.has(n)).forEach(n=>{try{localStorage.setItem('half04_'+n,kv[n]);}catch(e){}});
 }
 // ---- Fusion séance par séance quand deux appareils ont modifié le compte ----
 const MERGE_ID={history:w=>w.ext||(w.date+'|'+w.sport+'|'+w.duration+'|'+(w.notes||'')),races:r=>r.id,tests:t=>t.type+'|'+t.date,painLog:x=>x.id||x.d+'|'+x.z+'|'+(x.sport||'')+'|'+(x.at||''),gear:g=>g.id};
@@ -984,7 +984,7 @@ function restoreAutoBackup(){
  if(!A.length){toast('Aucune sauvegarde automatique (désactivée si les données sont volumineuses : utilise l’export).');return;}
  const b=A[0],dt=new Date(b.d+'T12:00:00').toLocaleDateString('fr-FR');
  if(!confirm('Restaurer la sauvegarde automatique du '+dt+' ? Les données de cet appareil seront remplacées.'))return;
- sbWipeLocal(false);Object.keys(b.kv).forEach(n=>{try{localStorage.setItem('half04_'+n,b.kv[n]);}catch(e){}});
+ sbWipeLocal(false);Object.keys(b.kv).filter(n=>!SB_LOCAL.has(n)).forEach(n=>{try{localStorage.setItem('half04_'+n,b.kv[n]);}catch(e){}});
  try{const m=sbMeta();m.dirty=true;sbSetMeta(m);}catch(e){}
  location.reload();
 }

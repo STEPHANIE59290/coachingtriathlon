@@ -125,13 +125,9 @@ test('easyLike normalise un ancien rôle absent sans le promouvoir', () => {
 test('les scripts JavaScript intégrés à index.html sont syntaxiquement valides', () => {
   const pattern = new RegExp('<script\\b([^>]*)>([\\s\\S]*?)<\\/script>', 'gi');
   const scripts = Array.from(html.matchAll(pattern))
-    .filter(([, attrs]) => {
-      if (/\\bsrc\\s*=/i.test(attrs)) return false;
-      const type = attrs.match(/\\btype\\s*=\\s*["']([^"']+)["']/i)?.[1];
-      return !type || type === 'module' || /^(text|application)\\/(javascript|ecmascript)$/i.test(type);
-    })
+    .filter(([, attrs]) => !attrs.toLowerCase().includes('src='))
     .map(([, , body]) => body)
     .filter(body => body.trim());
   assert.ok(scripts.length > 0, 'Aucun script JavaScript intégré détecté');
-  scripts.forEach((source, index) => new vm.Script(source, { filename: \`index.html:inline-script-\${index + 1}\` }));
+  scripts.forEach((source, index) => new vm.Script(source, { filename: 'index.html:inline-script-' + (index + 1) }));
 });

@@ -1046,6 +1046,21 @@ const TRAINING_ROLES=Object.freeze(['key','support','easy','unclassified']);
 const normalizeTrainingRole=role=>TRAINING_ROLES.includes(role)?role:'unclassified';
 const tagTrainingFactory=(factory,role)=>f=>({...factory(f),trainingRole:normalizeTrainingRole(role)});
 const tagTrainingCatalog=(factories,roles)=>factories.map((factory,i)=>tagTrainingFactory(factory,roles[i]));
+function catalogTrainingRoles(focus,phase,recovery,weekInPhase,type,length){
+ const roles=Array(length).fill('support'),im=type==='Ironman'&&phase==='spec';
+ if(phase==='spec'&&!recovery){
+  if(focus==='balanced'){if(im)roles[3]='key';else roles[4]='key';}
+  else if(focus==='bike'){if(im)roles[2]='key';else roles[3]='key';}
+  else if(focus==='run'&&!im)roles[4]='key';
+ }
+ if(focus==='balanced'&&phase==='spec'&&!recovery)roles[5]='easy';
+ else if(focus==='balanced'&&phase==='taper'&&weekInPhase===2)roles[5]='easy';
+ else if(focus==='balanced'&&phase!=='taper')roles[5]='easy';
+ else if(focus==='bike')roles[5]='easy';
+ else if(focus==='run')roles[2]='easy';
+ else if(focus==='swim')roles[5]='easy';
+ return roles;
+}
 const copyTrainingMetadata=(source,target)=>{
  const out={...target};
  if(source&&source.trainingRole!==undefined)out.trainingRole=normalizeTrainingRole(source.trainingRole);
@@ -1202,20 +1217,8 @@ function buildCatalog(focus,n,rec,ctx){
   swim:[swimTech,sq(0),sq(1),swimEnd,bikeEnd,runEasy,strength]
  };
  const L=lists[focus]||lists.balanced;
- const roles=L.map((_,i)=>'support');
- // Les rôles sont attribués explicitement selon la structure de chaque liste, jamais à partir du titre ou de la durée.
- if(ph==='spec'&&!rec){
-  if(focus==='balanced'){if(im)roles[3]='key';else roles[4]='key';}
-  else if(focus==='bike'){if(im)roles[2]='key';else roles[3]='key';}
-  else if(focus==='run'&&!im)roles[4]='key';
- }
- // Les footings d'entretien identifiés dans la structure des listes restent faciles.
- if(focus==='balanced'&&ph==='spec'&&!rec)roles[5]='easy';
- else if(focus==='balanced'&&ph==='taper')roles[ph==='taper'&&ctx.wr===2?5:5]='easy';
- else if(focus==='balanced')roles[5]='easy';
- else if(focus==='bike')roles[5]='easy';
- else if(focus==='run')roles[2]='easy';
- else if(focus==='swim')roles[5]='easy';
+ // Attribution explicite selon la structure de la liste, jamais selon le titre ou la durée.
+ const roles=catalogTrainingRoles(focus,ph,rec,ctx.wr,ctx.type,L.length);
  const tagged=tagTrainingCatalog(L,roles);
  return (tests.has('ftp')&&L.includes(T_FTP))?tagged.concat([tagTrainingFactory(T_CP5,'support')]):tagged;
 }
@@ -1612,7 +1615,7 @@ function generatePlan(){
  let planned=0;
  const brickDays=new Set();
  const fits=(it,d)=>avail[d]-dayUsed[d]>=it.min&&dSp[d].includes(it.sport)&&!(it.sport==='Course'&&brickDays.has(d))&&daySlots[d].some(sl=>!sl.used&&sl.sports.includes(it.sport)&&sl.max>=it.min); // le jour d'un enchaînement, la course est celle de l'enchaînement
- const place=(it,d,sl)=>{const {mk,...rest}=it;result.push({...rest,day:d});dayUsed[d]+=it.min;planned+=it.min;if(!sl&&!(it.sport==='Course'&&brickDays.has(d)))sl=daySlots[d].filter(q=>!q.used&&q.sports.includes(it.sport)&&q.max>=it.min).sort((a,b)=>a.max-b.max)[0];if(sl){sl.used=true;if(sl.indoor&&it.sport==='Vélo')result[result.length-1].indoor=true;}};
+ const place=(it,d,sl)=>{const {mk,...rest}=it;result.push({...rest,trainingRole:normalizeTrainingRole(rest.trainingRole),day:d});dayUsed[d]+=it.min;planned+=it.min;if(!sl&&!(it.sport==='Course'&&brickDays.has(d)))sl=daySlots[d].filter(q=>!q.used&&q.sports.includes(it.sport)&&q.max>=it.min).sort((a,b)=>a.max-b.max)[0];if(sl){sl.used=true;if(sl.indoor&&it.sport==='Vélo')result[result.length-1].indoor=true;}};
 
  // 1) Jours « brick » : un vélo d'endurance d'abord, puis la course enchaînée (le vélo passe toujours avant la course)
  days.forEach((_,d)=>{
@@ -2056,7 +2059,7 @@ function easyLike(x,min){
 // Séance proposée pour une séance prévue (d'origine), ou null si on la garde
 function proposeFor(x,st){
  if(x.event||x.opener)return null;
- {const ia=injuryAlt(x);if(ia)return ia;}
+ {const ia=injuryAlt(x);if(ia)return copyTrainingMetadata(x,ia);}
  const hard=!!(x.quality||x.long);let p=null;
  if(st.level==='red'){
   if(x.sport==='Renforcement'){if(x.title!=='Mobilité et gainage léger')p=easyLike(x,25);}
@@ -2224,7 +2227,7 @@ function freeAddPlan(r,d,t,extId){
  const di=Math.round((new Date(d+'T12:00:00')-mondayOf(ps))/864e5);
  if(di<0||di>6)return 'Hors de la semaine affichée : non ajoutée à « Ma semaine ».';
  const sport=$('freeSport').value;
- const it={sport,title:$('freeTitle').value.trim()||'Séance libre',min:r.est||r.total||60,desc:r.secs?freeDesc(r.secs,sport):r.text,intensity:'Libre',zone:'',day:di,free:true,extId,time:t};
+ const it={sport,title:$('freeTitle').value.trim()||'Séance libre',min:r.est||r.total||60,desc:r.secs?freeDesc(r.secs,sport):r.text,intensity:'Libre',zone:'',trainingRole:'unclassified',day:di,free:true,extId,time:t};
  if(r.secs&&sport!=='Renforcement')it.steps=r.secs;
  plan.push(it);put('plan',plan);renderPlan();refreshStats();
  return 'Ajoutée à « Ma semaine » ('+days[di].toLowerCase()+').';

@@ -106,12 +106,12 @@ test('la copie des métadonnées conserve le rôle et le groupe sans modifier la
   assert.deepEqual(target, { title: 'Séance facile' });
 });
 
-test('easyLike conserve le rôle et le groupe de séance pour chaque discipline', () => {
+test('easyLike convertit le rôle en easy et conserve le groupe de séance pour chaque discipline', () => {
   const easyLike = easyLikeFunction();
   for (const sport of ['Vélo', 'Course', 'Natation', 'Renforcement']) {
     const source = { sport, trainingRole: 'key', brickGroupId: 'brick-test' };
     const adapted = easyLike(source, 50);
-    assert.equal(adapted.trainingRole, 'key', sport);
+    assert.equal(adapted.trainingRole, 'easy', sport);
     assert.equal(adapted.brickGroupId, 'brick-test', sport);
   }
 });

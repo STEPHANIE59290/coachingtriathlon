@@ -94,9 +94,13 @@ details.icu{border:1px solid var(--line);border-radius:12px;padding:9px 11px;mar
 
 /* Module récupération masqué visuellement, code et données conservés */
 #wellCard{display:none!important}
+:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+#offlineBar{position:sticky;top:0;z-index:50;background:var(--navy);color:#fff;text-align:center;font-size:14px;padding:6px 10px;padding-top:calc(6px + env(safe-area-inset-top,0px))}
+#offlineBar[hidden]{display:none}
 </style>
 </head>
 <body>
+<div id="offlineBar" role="status" hidden>Hors connexion : tes données restent sur l’appareil et seront synchronisées au retour du réseau.</div>
 <header><div class="top"><h1>Mon Coach Triathlon</h1><span class="version">Version <span data-ver></span></span><button class="secondary" id="bell" onclick="goTodo()" style="min-height:0;padding:4px 10px;margin-left:8px">À faire <span id="bellN" class="pill">0</span></button></div><p id="appSub">Préparation triathlon · Coach personnel</p></header>
 <div class="menuWrap"><button class="menuBtn" onclick="toggleMenu()" aria-expanded="false" id="menuBtn" aria-label="Ouvrir le menu">☰</button></div>
 <div class="drawerShade" id="drawerShade" onclick="closeMenu()"></div>
@@ -354,7 +358,7 @@ window.addEventListener('unhandledrejection',ev=>logErr('promesse',ev.reason));
 const get=(k,d)=>{try{return JSON.parse(STORE.getItem('half04_'+k))??d}catch(e){return d}};
 const put=(k,v)=>{try{STORE.setItem('half04_'+k,JSON.stringify(v));try{sbDirty(k);}catch(_){}return true}catch(e){logErr('stockage',e);if(!storageWarned){storageWarned=true;notify('Le stockage local est indisponible (navigation privée ou accès bloqué) : tes données ne seront pas conservées. Pense à exporter.');}return false}};
 // ---- Versions : une mise à jour ne modifie jamais ton contenu ni ton historique ----
-const APP_VERSION='2.20.47',DATA_VERSION=1;
+const APP_VERSION='2.20.48',DATA_VERSION=1;
 const MIGRATIONS={ // n : fonction idempotente qui fait passer les données de la version n-1 à n (ex. 2:()=>{...})
 };
 (function migrateData(){
@@ -584,7 +588,7 @@ syncFromSlots();
 function showTab(id){document.querySelectorAll('.panel').forEach(x=>x.classList.toggle('active',x.id===id));window.scrollTo({top:0,behavior:'smooth'});if(id==='profile'||id==='sessions')renderZones();if(id==='profile'){renderProg();renderTests();renderTrends();renderSeason();renderHours();renderRaceVolume();}if(id==='home'){renderTodo();renderCoach();renderRace();renderWell();renderToday();renderBackup();}if(id==='course'){renderRace();}if(id==='fitness'){renderFitness();renderRdLog();}}
 function toggleMenu(){const d=document.getElementById('menuDrop'),shade=document.getElementById('drawerShade'),b=document.getElementById('menuBtn');const open=!d.classList.contains('open');d.classList.toggle('open',open);shade.classList.toggle('open',open);document.body.classList.toggle('menuOpen',open);d.setAttribute('aria-hidden',String(!open));b.setAttribute('aria-expanded',String(open));}
 function closeMenu(){const d=document.getElementById('menuDrop'),shade=document.getElementById('drawerShade'),b=document.getElementById('menuBtn');d.classList.remove('open');shade.classList.remove('open');document.body.classList.remove('menuOpen');d.setAttribute('aria-hidden','true');b.setAttribute('aria-expanded','false');}
-function navigateMenu(panel,target){showTab(panel);closeMenu();document.querySelectorAll('.drawerItem').forEach(x=>x.classList.toggle('active',x.dataset.panel===panel));if(target){setTimeout(()=>{const e=document.getElementById(target);if(e){e.classList.remove('closed');e.scrollIntoView({behavior:'smooth',block:'start'});}},100);}}
+function navigateMenu(panel,target){showTab(panel);closeMenu();document.querySelectorAll('.drawerItem').forEach(x=>{const on=x.dataset.panel===panel;x.classList.toggle('active',on);x.setAttribute('aria-current',on?'page':'false');});if(target){setTimeout(()=>{const e=document.getElementById(target);if(e){e.classList.remove('closed');e.scrollIntoView({behavior:'smooth',block:'start'});}},100);}}
 function drawerPlaceholder(name){closeMenu();notify(name+' : cette rubrique sera activée dans une prochaine version.')}
 
 // ---- Retour en un tap après la séance ----
@@ -4087,6 +4091,7 @@ function showGoogleLinks(){
 }
 
 // Usage hors ligne : le service worker sert la dernière version connue seulement sans réseau
+(function(){const b=document.getElementById('offlineBar');if(!b)return;const up=()=>{b.hidden=navigator.onLine;};window.addEventListener('online',up);window.addEventListener('offline',up);up();})();
 if('serviceWorker' in navigator&&/^https?:/.test(location.protocol)){
  window.addEventListener('load',()=>{
   navigator.serviceWorker.register('sw.js').then(reg=>{

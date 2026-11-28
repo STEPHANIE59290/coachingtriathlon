@@ -154,3 +154,122 @@ test('historique RPE : seuil de hausse exige deux valeurs récentes et trois ant
   assert.equal(response.recentRated, 2);
   assert.equal(response.priorRated, 3);
 });
+
+
+// --- Seuils et cas limites : les valeurs attendues reflètent les comparateurs du code actuel.
+function weekPlan(count = 10, minutes = 60) {
+  return Array.from({ length: count }, (_, i) => ({
+    ...futurePlan('Vélo'),
+    day: { date: dateOffset(-1) },
+    min: minutes,
+    quality: false,
+    long: false,
+    title: 'Séance facile',
+    id: i,
+  }));
+}
+function completedSessions(count, duration = 60) {
+  return Array.from({ length: count }, () => ({ duration }));
+}
+function redLog(count) {
+  const out = {};
+  for (let i = 0; i < count; i++) out[dateOffset(-i)] = { lvl: 'red' };
+  return out;
+}
+function amberLog(count) {
+  const out = {};
+  for (let i = 0; i < count; i++) out[dateOffset(-i)] = { lvl: 'amber' };
+  return out;
+}
+
+test('douleur 2/10 : aucun signal local ; douleur 3/10 : surveillance locale', () => {
+  const at2 = fixture({ workouts: [session('Course', { pain: 2 })] }).context.adaptiveWeekSignal();
+  const at3 = fixture({ workouts: [session('Course', { pain: 3 })] }).context.adaptiveWeekSignal();
+  assert.equal(at2.sports.Course.level, 'none');
+  assert.equal(at3.sports.Course.level, 'watch');
+  assert.equal(at3.level, 'green');
+  assert.deepEqual(Array.from(at3.localTargets, x => x.name), ['Course']);
+});
+
+test('douleur 4/10 : blocage local et niveau global rouge', () => {
+  const signal = fixture({ workouts: [session('Course', { pain: 4 })] }).context.adaptiveWeekSignal();
+  assert.equal(signal.sports.Course.level, 'blocked');
+  assert.equal(signal.level, 'red');
+  assert.equal(signal.painMax, 4);
+});
+
+test('RPE : un effort à 8 ne suffit pas, un effort à 9 déclenche la surveillance', () => {
+  const at8 = fixture({ workouts: [session('Vélo', { rpe: 8 })] }).context.adaptiveWeekSignal();
+  const at9 = fixture({ workouts: [session('Vélo', { rpe: 9 })] }).context.adaptiveWeekSignal();
+  assert.equal(at8.sports.Vélo.level, 'none');
+  assert.equal(at9.sports.Vélo.level, 'watch');
+});
+
+test('RPE : deux efforts à 8 déclenchent la surveillance locale', () => {
+  const signal = fixture({
+    workouts: [session('Vélo', { rpe: 8 }), session('Vélo', { rpe: 8, date: dateOffset(-2) })],
+  }).context.adaptiveWeekSignal();
+  assert.equal(signal.sports.Vélo.hard, 2);
+  assert.equal(signal.sports.Vélo.level, 'watch');
+});
+
+test('RPE moyen : seuil 7,5 avec au moins deux valeurs renseignées', () => {
+  const below = fixture({ workouts: [session('Natation', { rpe: 7 }), session('Natation', { rpe: 7, date: dateOffset(-2) })] }).context.adaptiveWeekSignal();
+  const at = fixture({ workouts: [session('Natation', { rpe: 7 }), session('Natation', { rpe: 8, date: dateOffset(-2) })] }).context.adaptiveWeekSignal();
+  assert.equal(below.sports.Natation.level, 'none');
+  assert.equal(at.sports.Natation.avgRpe, 7.5);
+  assert.equal(at.sports.Natation.level, 'watch');
+});
+
+test('forme basse : deux séances RPE ≥7 et forme ≤2 déclenchent la surveillance', () => {
+  const signal = fixture({
+    workouts: [session('Course', { rpe: 7, feel: 2 }), session('Course', { rpe: 7, feel: 1, date: dateOffset(-2) })],
+  }).context.adaptiveWeekSignal();
+  assert.equal(signal.sports.Course.level, 'watch');
+});
+
+test('adhérence : 5/10 est sous le seuil ; 6/10 et 7/10 ne le sont pas', () => {
+  const make = n => fixture({ plan: weekPlan(), done: completedSessions(n) }).context.adaptiveWeekSignal();
+  const at59 = make(5);
+  const at60 = make(6);
+  const above = make(7);
+  assert.equal(at59.adherence, 0.5);
+  assert.equal(at59.level, 'soft');
+  assert.equal(at60.adherence, 0.6);
+  assert.equal(at60.level, 'green');
+  assert.equal(above.adherence, 0.7);
+  assert.equal(above.level, 'green');
+});
+
+test('volume effectué : 124 % et 125 % ne déclenchent pas le signal ; 126 % le déclenche', () => {
+  const make = duration => fixture({
+    plan: weekPlan(10, 100),
+    done: completedSessions(10, duration),
+  }).context.adaptiveWeekSignal();
+  const at124 = make(124);
+  const at125 = make(125);
+  const at126 = make(126);
+  assert.equal(at124.ratio, 1.24);
+  assert.equal(at124.level, 'green');
+  assert.equal(at125.ratio, 1.25);
+  assert.equal(at125.level, 'green');
+  assert.equal(at126.ratio, 1.26);
+  assert.equal(at126.level, 'soft');
+});
+
+test('bilans rouges : deux jours donnent amber, trois jours donnent red', () => {
+  const at2 = fixture({ rdLog: redLog(2) }).context.adaptiveWeekSignal();
+  const at3 = fixture({ rdLog: redLog(3) }).context.adaptiveWeekSignal();
+  assert.equal(at2.level, 'amber');
+  assert.equal(at2.redDays, 2);
+  assert.equal(at3.level, 'red');
+  assert.equal(at3.redDays, 3);
+});
+
+test('bilans orange : deux jours ne suffisent pas, trois jours donnent amber', () => {
+  const at2 = fixture({ rdLog: amberLog(2) }).context.adaptiveWeekSignal();
+  const at3 = fixture({ rdLog: amberLog(3) }).context.adaptiveWeekSignal();
+  assert.equal(at2.level, 'green');
+  assert.equal(at3.level, 'amber');
+  assert.equal(at3.amberDays, 3);
+});

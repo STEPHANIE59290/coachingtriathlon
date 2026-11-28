@@ -1042,7 +1042,17 @@ function saveAvailability(silent){
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const r5=v=>Math.round(v/5)*5;
 const rot=(arr,n)=>arr[((n%arr.length)+arr.length)%arr.length];
-const mkS=(sport,title,min,desc,intensity,extra)=>({sport,title,min,desc,intensity,zone:'',...extra});
+const TRAINING_ROLES=Object.freeze(['key','support','easy','unclassified']);
+const normalizeTrainingRole=role=>TRAINING_ROLES.includes(role)?role:'unclassified';
+const tagTrainingFactory=(factory,role)=>f=>({...factory(f),trainingRole:normalizeTrainingRole(role)});
+const tagTrainingCatalog=(factories,roles)=>factories.map((factory,i)=>tagTrainingFactory(factory,roles[i]));
+const copyTrainingMetadata=(source,target)=>{
+ const out={...target};
+ if(source&&source.trainingRole!==undefined)out.trainingRole=normalizeTrainingRole(source.trainingRole);
+ if(source&&source.brickGroupId!==undefined)out.brickGroupId=source.brickGroupId;
+ return out;
+};
+const mkS=(sport,title,min,desc,intensity,extra)=>({sport,title,min,desc,intensity,zone:'',trainingRole:'unclassified',...extra,trainingRole:normalizeTrainingRole(extra&&extra.trainingRole)});
 // Endurance : la durée suit la charge ; l'échauffement et le retour au calme restent fixes.
 // Chaque séance porte aussi ses « steps » (structure détaillée) pour l'export intervals.icu.
 const endur=(sport,title,base,warm,cool,code,intensity,o={})=>f=>{
@@ -1154,11 +1164,11 @@ const runOpen=()=>mkS('Course','Footing de rappel',21,'10 min faciles · 4 × 30
 
 function buildCatalog(focus,n,rec,ctx){
  ctx=ctx||{};const ph=ctx.phase||null,tests=new Set(ctx.tests||[]);
- if(focus==='recovery')return[
+ if(focus==='recovery')return tagTrainingCatalog([
   ()=>mkS('Natation','Natation récupération',30,'Nage très facile et technique','Très facile',{zone:'Z1',steps:[{name:'Séance',items:[{cue:'Nage très facile',sec:1800,z:'Z1'}]}]}),
   ()=>mkS('Vélo','Vélo souple',45,'Pédalage fluide, faible résistance','Très facile',{zone:'Z1',steps:[{name:'Séance',items:[{cue:'Pédalage fluide',min:45,z:'Z1'}]}]}),
-  ()=>mkS('Renforcement','Mobilité et gainage léger',25,'Mobilité douce, respiration et stabilité','Très facile')];
- if(ph==='race')return[swimOpen,bikeOpen,runOpen,endur('Course','Footing facile',40,10,5,'Z2','Facile')];
+  ()=>mkS('Renforcement','Mobilité et gainage léger',25,'Mobilité douce, respiration et stabilité','Très facile')],['easy','easy','easy']);
+ if(ph==='race')return tagTrainingCatalog([swimOpen,bikeOpen,runOpen,endur('Course','Footing facile',40,10,5,'Z2','Facile')],['easy','easy','easy','easy']);
  const swimTech=()=>swimTechBuild();
  const strength=()=>strengthBuild(ph);
  const bikeEnd=endur('Vélo','Vélo endurance',60,10,10,'Z2','Z2');
@@ -1192,7 +1202,22 @@ function buildCatalog(focus,n,rec,ctx){
   swim:[swimTech,sq(0),sq(1),swimEnd,bikeEnd,runEasy,strength]
  };
  const L=lists[focus]||lists.balanced;
- return (tests.has('ftp')&&L.includes(T_FTP))?L.concat([T_CP5]):L;
+ const roles=L.map((_,i)=>'support');
+ // Les rôles sont attribués explicitement selon la structure de chaque liste, jamais à partir du titre ou de la durée.
+ if(ph==='spec'&&!rec){
+  if(focus==='balanced'){if(im)roles[3]='key';else roles[4]='key';}
+  else if(focus==='bike'){if(im)roles[2]='key';else roles[3]='key';}
+  else if(focus==='run'&&!im)roles[4]='key';
+ }
+ // Les footings d'entretien identifiés dans la structure des listes restent faciles.
+ if(focus==='balanced'&&ph==='spec'&&!rec)roles[5]='easy';
+ else if(focus==='balanced'&&ph==='taper')roles[ph==='taper'&&ctx.wr===2?5:5]='easy';
+ else if(focus==='balanced')roles[5]='easy';
+ else if(focus==='bike')roles[5]='easy';
+ else if(focus==='run')roles[2]='easy';
+ else if(focus==='swim')roles[5]='easy';
+ const tagged=tagTrainingCatalog(L,roles);
+ return (tests.has('ftp')&&L.includes(T_FTP))?tagged.concat([tagTrainingFactory(T_CP5,'support')]):tagged;
 }
 
 // ---- Progression de la charge ----
@@ -2023,10 +2048,10 @@ function readinessState(){
 // Séance facile (zone 2) de la même discipline, durée en minutes
 function easyLike(x,min){
  min=Math.max(20,r5(min));
- if(x.sport==='Vélo')return endur('Vélo','Vélo facile',min,5,5,'Z2','Facile')(1);
- if(x.sport==='Course')return endur('Course','Footing facile',min,5,5,'Z2','Facile')(1);
- if(x.sport==='Natation')return mkS('Natation','Natation facile',min,'Nage continue facile et technique en {Z2}, sans forcer','Facile',{zone:'Z2',steps:[{name:'Séance',items:[{cue:'Nage facile',sec:min*60,z:'Z2'}]}]});
- return mkS('Renforcement','Mobilité et gainage léger',Math.min(min,25),'Mobilité douce, respiration et stabilité','Très facile');
+ if(x.sport==='Vélo')return copyTrainingMetadata(x,endur('Vélo','Vélo facile',min,5,5,'Z2','Facile')(1));
+ if(x.sport==='Course')return copyTrainingMetadata(x,endur('Course','Footing facile',min,5,5,'Z2','Facile')(1));
+ if(x.sport==='Natation')return copyTrainingMetadata(x,mkS('Natation','Natation facile',min,'Nage continue facile et technique en {Z2}, sans forcer','Facile',{zone:'Z2',steps:[{name:'Séance',items:[{cue:'Nage facile',sec:min*60,z:'Z2'}]}]}));
+ return copyTrainingMetadata(x,mkS('Renforcement','Mobilité et gainage léger',Math.min(min,25),'Mobilité douce, respiration et stabilité','Très facile'));
 }
 // Séance proposée pour une séance prévue (d'origine), ou null si on la garde
 function proposeFor(x,st){

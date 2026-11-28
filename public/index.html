@@ -354,7 +354,7 @@ window.addEventListener('unhandledrejection',ev=>logErr('promesse',ev.reason));
 const get=(k,d)=>{try{return JSON.parse(STORE.getItem('half04_'+k))??d}catch(e){return d}};
 const put=(k,v)=>{try{STORE.setItem('half04_'+k,JSON.stringify(v));try{sbDirty(k);}catch(_){}return true}catch(e){logErr('stockage',e);if(!storageWarned){storageWarned=true;notify('Le stockage local est indisponible (navigation privée ou accès bloqué) : tes données ne seront pas conservées. Pense à exporter.');}return false}};
 // ---- Versions : une mise à jour ne modifie jamais ton contenu ni ton historique ----
-const APP_VERSION='2.20.46',DATA_VERSION=1;
+const APP_VERSION='2.20.47',DATA_VERSION=1;
 const MIGRATIONS={ // n : fonction idempotente qui fait passer les données de la version n-1 à n (ex. 2:()=>{...})
 };
 (function migrateData(){
@@ -390,7 +390,7 @@ const sbToSess=j=>({access_token:j.access_token,refresh_token:j.refresh_token,ex
 async function sbRefresh(){
  if(!sbSess||!sbSess.refresh_token)return false;
  try{const r=await fetch(SBC.url+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:sbH(),body:JSON.stringify({refresh_token:sbSess.refresh_token})});
-  if(!r.ok)return false;sbSaveSess(sbToSess(await r.json()));return true;}catch(e){return false;}
+  if(!r.ok){let t='';try{t=(await r.clone().text()).slice(0,160);}catch(_){}logErr('session','rafraîchissement refusé : HTTP '+r.status+' '+t);return false;}sbSaveSess(sbToSess(await r.json()));return true;}catch(e){logErr('session',e);return false;}
 }
 async function sbFetch(path,opt,retry){
  opt=opt||{};
@@ -476,7 +476,7 @@ async function sbPull(first){
 function sbStatus(){
  const el=$('accountBox');if(!el||!SB_ON||!sbSess)return;
  const m=sbMeta(),hh=m.at?new Date(m.at).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):null;
- const st=!navigator.onLine?'Hors connexion : tes changements seront envoyés au retour du réseau.':m.dirty&&m.err?'Échec de l’envoi ('+m.err.m+'). Réessaie, ou exporte une sauvegarde pour ne rien perdre.':m.dirty?'Modifications en attente de synchronisation…':'Synchronisé'+(hh?' à '+hh:'')+'.';
+ const st=!navigator.onLine?'Hors connexion : tes changements seront envoyés au retour du réseau.':m.dirty&&m.err?(m.err.m==='HTTP 401'?'Session expirée. Exporte une sauvegarde, puis déconnecte-toi et reconnecte-toi.':'Échec de l’envoi ('+m.err.m+'). Réessaie, ou exporte une sauvegarde pour ne rien perdre.'):m.dirty?'Modifications en attente de synchronisation…':'Synchronisé'+(hh?' à '+hh:'')+'.';
  el.innerHTML=`<p style="margin:0 0 6px"><strong>${esc(sbSess.email||'')}</strong></p><p class="muted" style="margin:0 0 10px">${esc(st)}</p><div class="actions"><button class="secondary" onclick="sbSyncNow()">Synchroniser maintenant</button><button class="secondary" onclick="sbLogout()">Se déconnecter</button></div><div class="actions" style="margin-top:8px"><button class="secondary" onclick="exportData()">Exporter mes données</button><button class="secondary" onclick="sbDeleteAccount()">Supprimer mon compte</button></div>`;
  const c=$('accountCard');if(c)c.style.display='';
 }

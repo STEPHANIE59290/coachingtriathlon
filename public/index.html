@@ -350,7 +350,7 @@ window.addEventListener('unhandledrejection',ev=>logErr('promesse',ev.reason));
 const get=(k,d)=>{try{return JSON.parse(STORE.getItem('half04_'+k))??d}catch(e){return d}};
 const put=(k,v)=>{try{STORE.setItem('half04_'+k,JSON.stringify(v));try{sbDirty(k);}catch(_){}return true}catch(e){logErr('stockage',e);if(!storageWarned){storageWarned=true;notify('Le stockage local est indisponible (navigation privée ou accès bloqué) : tes données ne seront pas conservées. Pense à exporter.');}return false}};
 // ---- Versions : une mise à jour ne modifie jamais ton contenu ni ton historique ----
-const APP_VERSION='2.20.43',DATA_VERSION=1;
+const APP_VERSION='2.20.44',DATA_VERSION=1;
 const MIGRATIONS={ // n : fonction idempotente qui fait passer les données de la version n-1 à n (ex. 2:()=>{...})
 };
 (function migrateData(){
@@ -582,10 +582,23 @@ function navigateMenu(panel,target){showTab(panel);closeMenu();document.querySel
 function drawerPlaceholder(name){closeMenu();notify(name+' : cette rubrique sera activée dans une prochaine version.')}
 
 // ---- Retour en un tap après la séance ----
+function plannedSessionForWorkout(w){if(!w||!plan.length||!get('planStart',''))return null;const matches=matchDone(),i=matches.findIndex(x=>x&&((w.ext&&x.ext===w.ext)||(x.date===w.date&&planSport(x.sport)===planSport(w.sport))));return i>=0?plan[i]:null;}
+function postSessionCoachInsight(w,planned){
+ const p=+(w&&((w.postSession&&w.postSession.pain)??w.pain??0)),r=+(w&&((w.postSession&&w.postSession.rpe)||w.rpe)||0),feel=+(w&&((w.postSession&&w.postSession.feel)||w.feel)||0),fuel=w&&w.postSession&&w.postSession.fuel;
+ let title='Séance enregistrée',message='Retour enregistré. Le moteur le conserve pour contextualiser les prochaines recommandations.';
+ if(p>=4){title='Douleur à surveiller';message='Douleur déclarée à '+p+'/10 : ne cherche pas à compenser la séance. Évite de solliciter la zone douloureuse et demande un avis professionnel si la douleur est importante, inhabituelle, persiste ou s’aggrave.';}
+ else if(p>=3){title='Gêne à surveiller';message='Gêne déclarée à '+p+'/10 : observe son évolution et sa réaction dans les 24 heures. Ne force pas si elle augmente.';}
+ else if(r>=9||(r>=8&&feel>=4)){title='Effort nettement supérieur aux attentes';message='RPE '+r+'/10'+(feel?' et fatigue de fin de séance '+feel+'/5':'')+' : garde une marge de récupération avant la prochaine séance exigeante.';}
+ else if(r>=8){title='Effort élevé';message='RPE '+r+'/10 : vérifie que la prochaine séance facile reste réellement facile.';}
+ else if(r<=4&&feel>0&&feel<=2){title='Séance bien tolérée';message='Effort modéré et bonnes sensations : signal favorable, sans raison d’ajouter du volume automatiquement.';}
+ if(planned){const target=+planned.min||0,actual=+(w.duration||0);if(target>0&&actual<target*.8)message+=' Durée inférieure de plus de 20 % au prévu : ne rattrape pas automatiquement les minutes manquantes.';else if(target>0&&actual>target*1.2)message+=' Durée supérieure de plus de 20 % au prévu : tiens-en compte dans la récupération.';else if(target>0)message+=' Durée proche de celle planifiée.';if(planned.trainingRole==='key')message+=' Séance prioritaire : évalue surtout sa qualité et sa tolérance, pas seulement sa durée.';}
+ if(fuel==='peu')message+=' Les apports ont été déclarés insuffisants : revois la stratégie de ravitaillement sur une prochaine séance comparable.';if(fuel==='dig')message+=' Un inconfort digestif a été signalé : ajuste progressivement les apports et note les produits concernés.';
+ return {title,message};
+}
 function renderQuickFeel(){const el=$('quickFeel');if(!el)return;
  const lim=iso(new Date(Date.now()-7*864e5)),F=get('feel',{});
  const i=workouts.findIndex(w=>w.date&&w.date>=lim&&!(w.postSession&&w.postSession.completedAt));
- if(i<0){el.innerHTML='';return;}
+ if(i<0){const last=workouts.find(w=>w.postSession&&w.postSession.completedAt);if(!last){el.innerHTML='';return;}const q=postSessionCoachInsight(last,plannedSessionForWorkout(last));el.innerHTML='<div class="card"><h2>Dernier retour analysé</h2><p class="hint" style="margin:0 0 5px">'+esc(last.sport)+' · '+esc(last.date)+' · '+esc(last.duration||0)+' min</p><strong>'+esc(q.title)+'</strong><p style="margin:6px 0 0">'+esc(q.message)+'</p><p class="hint">Lecture indicative ; aucune modification automatique du planning.</p></div>';return;}
  const w=workouts[i],f=(w.ext&&F[w.ext])||w.postSession||{};
  const opts=(a,b,v)=>Array.from({length:b-a+1},(_,n)=>a+n).map(n=>`<option value="${n}"${String(v??'')===String(n)?' selected':''}>${n}</option>`).join('');
  el.innerHTML=`<div class="card" id="postSessionCard"><h2>Bilan post-séance</h2><p class="hint" style="margin-top:0">${esc(w.sport)}${w.duration?' · '+esc(w.duration)+' min':''} · ${esc(w.date)}. Ce retour permet au coach de mieux ajuster les prochaines séances.</p>
@@ -733,7 +746,7 @@ function renderPrev(){const el=$('prevBox');if(!el)return;
  const t=Date.now(),d=n=>iso(new Date(t-n*864e5)),R=w=>String(w.sport).startsWith('Course')?(+w.duration||0):0;
  const wk=workouts.filter(w=>w.date>d(7)).reduce((a,w)=>a+R(w),0),pv=workouts.filter(w=>w.date>d(35)&&w.date<=d(7)).reduce((a,w)=>a+R(w),0)/4;
  const load=pv>=30?`<p style="margin:8px 0">Course cette semaine : ${Math.round(wk)} min, pour ${Math.round(pv)} min en moyenne sur les 4 semaines précédentes (${sgn(Math.round((wk-pv)/pv*100))} %).${wk>pv*1.3?' <span style="color:var(--orange)">Une hausse de plus de 30 % en une semaine est souvent associée à plus de blessures : garde cette semaine plus facile.</span>':''}</p>`:'';
- el.innerHTML=`<label for="prevZone">Zone sensible</label><select id="prevZone" onchange="setPrevZone(this.value)">${Object.keys(PREV).map(k=>`<option value="${k}"${k===sel?' selected':''}>${PREV[k].n}</option>`).join('')}</select>${auto&&!get('prevZone','')?'<p class="hint">Zone choisie d’après ta blessure déclarée.</p>':''}<p style="margin:8px 0"><strong>${P.n}</strong> · ${dose}</p><p>${P.ex.map(x=>'• '+esc(x)).join('<br>')}</p>${load}<div class="actions"><button class="secondary" onclick="reportPain()">Signaler une gêne à cet endroit</button></div><p class="hint">Une gêne jusqu’à 3 sur 10 qui retombe en 24 h est acceptable. Au-delà, allège. Consulte un professionnel pour une douleur de nuit, un gonflement, une douleur précise sur un os ou une gêne qui dure plus de 2 semaines. Cette routine ne remplace pas un avis médical.</p>`;
+ el.innerHTML=`<label for="prevZone">Zone sensible</label><select id="prevZone" onchange="setPrevZone(this.value)">${Object.keys(PREV).map(k=>`<option value="${k}"${k===sel?' selected':''}>${PREV[k].n}</option>`).join('')}</select>${auto&&!get('prevZone','')?'<p class="hint">Zone choisie d’après ta blessure déclarée.</p>':''}<div class="grid" style="margin-top:8px"><div><label for="prevPainSeverity">Intensité actuelle (0–10)</label><select id="prevPainSeverity">${Array.from({length:11},(_,n)=>'<option value="'+n+'"'+(n===0?' selected':'')+'>'+n+'/10</option>').join('')}</select></div><div><label for="prevPainSport">Discipline concernée</label><select id="prevPainSport"><option value="">Non précisée</option><option>Natation</option><option>Vélo</option><option>Course</option><option>Renforcement</option></select></div></div><p style="margin:8px 0"><strong>${P.n}</strong> · ${dose}</p><p>${P.ex.map(x=>'• '+esc(x)).join('<br>')}</p>${load}<div class="actions"><button class="secondary" onclick="reportPain()">Signaler une gêne à cet endroit</button></div><p class="hint">Une gêne jusqu’à 3 sur 10 qui retombe en 24 h est acceptable. Au-delà, allège. Consulte un professionnel pour une douleur de nuit, un gonflement, une douleur précise sur un os ou une gêne qui dure plus de 2 semaines. Cette routine ne remplace pas un avis médical.</p>`;
 }
 function showErrLog(){const el=$('errLogBox');if(!el)return;let A=[];try{A=JSON.parse(localStorage.getItem('half04_errLog')||'[]')||[];}catch(e){}
  if(!A.length){el.textContent='Aucune erreur enregistrée.';return;}
@@ -836,16 +849,18 @@ function renderSkills(){const el=$('skills');if(!el)return;if(el.contains(docume
  const row=(k,t,txt)=>{const a=age(k),late=a===null||a>14;return `<p style="margin:10px 0 4px"><strong>${t}</strong> <span class="muted">${a===null?'jamais fait':'fait il y a '+a+' j'}</span>${late?' <span style="color:var(--orange)">· à refaire</span>':''}</p><p class="hint" style="margin-top:0">${txt}</p><div class="actions" style="margin-top:6px"><button class="secondary" onclick="setSkill('${k}')">Fait aujourd’hui</button></div>`;};
  el.innerHTML=`<div class="card fold closed"><h2 class="fh">Eau libre et transitions</h2>${row('ow','Eau libre','Repère tous les 6 à 10 coups de bras, 3 départs rapides de 100 m en groupe, nage en ligne droite sans ligne d’eau. En piscine : lève la tête toutes les 8 respirations. Une séance toutes les 2 semaines.')}${row('tr','Transitions','3 enchaînements T1 (combinaison, casque, chaussures de vélo) puis 3 T2 (chaussures de course, dossard) en chronométrant. Prépare ton emplacement comme le jour J.')}</div>`;}
 function setSkill(k){const S=get('skillLog',{});S[k]=iso(new Date());put('skillLog',S);renderSkills();toast('Noté.');}
-// ---- Gêne qui revient ----
-function painHtml(inj){if(inj)return '';const t=iso(new Date(Date.now()-14*864e5)),c={};get('painLog',[]).filter(x=>x.d>=t).forEach(x=>{c[x.z]=(c[x.z]||0)+1;});
- const z=Object.keys(c).find(k=>c[k]>=3);if(!z)return '';
- return `<div class="warn" style="margin-bottom:12px"><strong>Gêne qui revient : ${esc(PREV[z]?PREV[z].n:z)}</strong> : ${c[z]} signalements en 14 jours. Mieux vaut alléger maintenant que s’arrêter plus tard.<div class="actions"><button class="primary" onclick="lightenZone('${z}')">Alléger pendant 7 jours</button></div><small class="muted">Si la gêne persiste, consulte un professionnel de santé.</small></div>`;}
-function reportPain(){const z=$('prevZone')?$('prevZone').value:'general';if(z==='general'){notify('Choisis d’abord une zone sensible.');return;}
- const L=get('painLog',[]);L.push({d:iso(new Date()),z});while(L.length>100)L.shift();put('painLog',L);toast('Gêne notée.');renderInjBanner();}
-function lightenZone(z){const T={achille:'Tendinite',genou:'Articulation (entorse, genou, cheville)',hanche:'Musculaire (contracture, claquage)',dos:'Dos / lombaires',epaule:'Tendinite',pied:'Autre'},nm=(PREV[z]?PREV[z].n:z).slice(0,60),ty=T[z]||'Autre';
- put('injury',{type:ty,zone:nm,blocked:[],since:iso(new Date()),until:iso(new Date(Date.now()+7*864e5))});
- if($('injury')){$('injury').value='yes';$('injType').value=ty;$('injZone').value=nm;injChanged();}
- renderInjBanner();notify('Zone allégée pendant 7 jours : régénère ton planning, les séances de qualité et longues seront remplacées par du facile.');}
+// ---- Suivi longitudinal des douleurs : intensité et discipline, sans diagnostic ----
+function painHistorySummary(entries,fromDate){
+ const grouped={};(entries||[]).filter(x=>x&&x.d&&x.d>=fromDate).forEach(x=>{const z=String(x.z||'general'),g=grouped[z]||(grouped[z]={zone:z,count:0,known:0,max:null,total:0,sports:{}});g.count++;const p=Number(x.pain);if(x.pain!==undefined&&x.pain!==null&&x.pain!==''&&Number.isFinite(p)){g.known++;g.total+=p;g.max=g.max===null?p:Math.max(g.max,p);}const sport=String(x.sport||'');if(sport)g.sports[sport]=(g.sports[sport]||0)+1;});
+ return Object.values(grouped).map(g=>({...g,average:g.known?g.total/g.known:null})).sort((a,b)=>b.count-a.count);
+}
+function painHtml(inj){if(inj)return '';const since=iso(new Date(Date.now()-14*864e5)),items=painHistorySummary(get('painLog',[]),since),hit=items.find(x=>x.count>=3||x.max>=4);if(!hit)return '';
+ const name=PREV[hit.zone]?PREV[hit.zone].n:hit.zone,mean=hit.average===null?'intensité non renseignée':'intensité moyenne '+hit.average.toFixed(1).replace('.',',')+'/10',sport=Object.keys(hit.sports).join(', ');
+ const severity=hit.max>=4?' Une douleur ≥ 4/10 mérite de suspendre la sollicitation douloureuse et de demander un avis professionnel si elle persiste ou s’aggrave.':' La répétition justifie de réduire temporairement la contrainte et de surveiller son évolution.';
+ const action=Object.prototype.hasOwnProperty.call(PREV,hit.zone)?'<div class="actions"><button class="primary" onclick="lightenZone(\''+hit.zone+'\')">Proposer un allègement de 7 jours</button></div>':'';
+ return '<div class="warn" style="margin-bottom:12px"><strong>Douleur à suivre : '+esc(name)+'</strong> · '+hit.count+' signalement(s) en 14 jours · '+mean+(sport?' · '+esc(sport):'')+'.'+severity+action+'<small class="muted">Ce suivi repère une répétition, il ne pose aucun diagnostic et ne remplace pas un professionnel de santé.</small></div>';
+}
+function reportPain(){const z=$('prevZone')?$('prevZone').value:'general';if(z==='general'){notify('Choisis d’abord une zone sensible.');return;}const pain=$('prevPainSeverity')?+$('prevPainSeverity').value:0,sport=$('prevPainSport')?$('prevPainSport').value:'';const L=get('painLog',[]);L.push({d:iso(new Date()),z,pain,sport});while(L.length>100)L.shift();put('painLog',L);toast('Gêne enregistrée avec son intensité.');renderInjBanner();}
 // ---- Apparence ----
 function applyUi(){const t=get('uiTheme','auto'),d=t==='dark'||(t==='auto'&&matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.dataset.theme=d?'dark':'light';document.documentElement.classList.toggle('big',!!get('uiBig',false));}
 function setUi(){put('uiTheme',$('uiTheme').value);put('uiBig',$('uiBig').checked);applyUi();}
@@ -1866,7 +1881,24 @@ function renderInjBanner(){
  let load='';try{const S=buildFitSeries(7,new Date()),pt=S&&S.pts.filter(q=>!q.proj).pop();if(pt&&pt.ctl>5&&pt.atl/pt.ctl>1.5)load='<div class="warn" style="margin-bottom:12px"><strong>Charge récente élevée</strong> : ta fatigue dépasse 1,5 fois ta fitness. Privilégie le facile ou le repos, et consulte en cas de douleur inhabituelle, de fièvre ou de gêne persistante.</div>';}catch(e){}
  el.innerHTML=load+sleepBanner()+painHtml(i)+(i?`<div class="warn" style="margin-bottom:12px"><strong>Blessure en cours</strong> : ${esc(i.type)}${i.zone?' · '+esc(i.zone):''}. ${i.blocked.length?'Sports bloqués : '+esc(i.blocked.map(q=>INJ_LABEL[q]).join(', '))+' (retirés du planning).':'Gêne sans sport bloqué : séances de qualité et longues remplacées par du facile.'}<div class="actions" style="margin-top:8px"><button class="secondary" onclick="healInjury()">Blessure guérie</button></div></div>`:'');
 }
-function saveReadiness(){put('readiness',{date:iso(new Date()),sleep:$('sleep').value,fatigue:$('fatigue').value,feeling:$('feeling').value,life:$('lifeLoad').value,time:$('todayTime').value});{const RL=get('rdLog',{});RL[iso(new Date())]={lvl:readinessState().level,sleep:$('sleep').value,fatigue:$('fatigue').value,feeling:$('feeling').value,life:$('lifeLoad').value};Object.keys(RL).sort().slice(0,-60).forEach(k=>delete RL[k]);put('rdLog',RL);}renderRdLog();const im=saveInjury();toast('Bilan du jour enregistré.'+im);}
+function readinessAvailabilityScore(data){
+ const d=data||{};let score=100;const factors=[];const add=(n,s)=>{score-=n;factors.push(s);};
+ const sleep=Number(d.sleep);if(d.sleep!==''&&Number.isFinite(sleep)&&sleep<5.5)add(25,'sommeil court');else if(d.sleep!==''&&Number.isFinite(sleep)&&sleep<6.5)add(12,'sommeil un peu court');
+ if(d.fatigue==='Élevée')add(25,'fatigue élevée');else if(d.fatigue==='Modérée')add(10,'fatigue modérée');
+ if(d.feeling==='Mauvaises')add(25,'mauvaises sensations');else if(d.feeling==='Moyennes')add(12,'sensations moyennes');
+ if(d.life==='Élevée')add(8,'charge de vie élevée');else if(d.life==='Nuit hachée')add(5,'nuit hachée');
+ if(+d.painMax>=4)add(35,'douleur importante signalée');else if(+d.painMax>=3)add(18,'douleur à surveiller');
+ if(d.recentLevel==='amber')add(15,'signal de récupération récent');else if(d.recentLevel==='soft')add(8,'efforts récents exigeants');
+ score=Math.max(0,Math.min(100,Math.round(score)));return {score,factors,band:score>=80?'bonne':score>=60?'modérée':score>=40?'faible':'très faible'};
+}
+function currentReadinessAvailability(){
+ const week=adaptiveWeekSignal(),prev=previousGlobalSessionSignal(),since=iso(new Date(Date.now()-7*864e5)),loggedPain=get('painLog',[]).filter(x=>x&&x.d>=since).reduce((m,x)=>Math.max(m,+x.pain||0),0),painMax=Math.max(week.painMax||0,loggedPain);
+ return readinessAvailabilityScore({sleep:$('sleep')?$('sleep').value:'',fatigue:$('fatigue')?$('fatigue').value:'',feeling:$('feeling')?$('feeling').value:'',life:$('lifeLoad')?$('lifeLoad').value:'',painMax,recentLevel:prev&&prev.level});
+}
+function renderReadinessAvailability(){
+ const el=$('readiness');if(!el)return;const s=currentReadinessAvailability(),why=s.factors.length?s.factors.join(' · '):'aucun facteur défavorable renseigné';
+ el.innerHTML='<strong>Disponibilité indicative : '+s.score+'/100 · '+s.band+'</strong><br><span class="hint">Repère d’aide à la décision, pas une mesure médicale. Facteurs : '+esc(why)+'. Le bilan qualitatif et les douleurs restent prioritaires.</span>';
+}function saveReadiness(){const availability=currentReadinessAvailability();put('readiness',{date:iso(new Date()),sleep:$('sleep').value,fatigue:$('fatigue').value,feeling:$('feeling').value,life:$('lifeLoad').value,time:$('todayTime').value,availability:availability.score});{const RL=get('rdLog',{});RL[iso(new Date())]={lvl:readinessState().level,sleep:$('sleep').value,fatigue:$('fatigue').value,feeling:$('feeling').value,life:$('lifeLoad').value,availability:availability.score};Object.keys(RL).sort().slice(0,-60).forEach(k=>delete RL[k]);put('rdLog',RL);}renderRdLog();const im=saveInjury();renderReadinessAvailability();toast('Bilan du jour enregistré.'+im);}
 
 // ---- Bilan du jour → séance du jour ----
 // Niveaux : rest (0 min dispo), red, amber, soft (fatigue modérée seule), green
@@ -2029,6 +2061,21 @@ function adaptiveLongitudinalAdvice(trend,phase,week){
  if(type==='70.3')return 'Préparation 70.3 : développer progressivement la capacité à tenir l’allure cible, en gardant un équilibre entre travail soutenu et endurance facile.';
  return 'Tendance à interpréter avec le contexte individuel : conserver la structure actuelle et vérifier la récupération avant toute progression.';
 }
+// Synthèse du planning réellement exécuté : informative, sans rattrapage automatique.
+function trainingRealitySummary(planItems,doneItems,throughDate){
+ const eligible=(planItems||[]).map((x,i)=>({x,i})).filter(({x})=>x&&!x.event&&!x.opener&&(+x.min||0)>0&&(!throughDate||typeof planDayISO!=='function'||planDayISO(x.day)<=throughDate));
+ const rows=eligible.map(({x,i})=>{const w=(doneItems||[])[i]||null,planned=+x.min||0,actual=w?(+w.duration||+w.min||0):0;return {role:adaptiveRoleOf(x),planned,actual,done:!!w,shifted:!!(w&&w.shifted)};});
+ const total=rows.length,done=rows.filter(x=>x.done).length,key=rows.filter(x=>x.role==='key');
+ return {total,done,missed:total-done,adherence:total?done/total:null,plannedMinutes:rows.reduce((a,x)=>a+x.planned,0),actualMinutes:rows.reduce((a,x)=>a+x.actual,0),shortened:rows.filter(x=>x.done&&x.actual<x.planned*.8).length,extended:rows.filter(x=>x.done&&x.actual>x.planned*1.2).length,shifted:rows.filter(x=>x.shifted).length,keyPlanned:key.length,keyDone:key.filter(x=>x.done).length};
+}
+function raceSpecificFocus(type,key){
+ if(key==='taper'||key==='race')return 'Affûtage : conserver les rappels courts prévus, réduire la fatigue et ne pas compenser le volume.';
+ if(type==='Ironman'&&key==='spec')return 'Ironman spécifique : durabilité à vélo, enchaînements prévus et répétition de la stratégie nutritionnelle.';
+ if(type==='70.3'&&key==='spec')return '70.3 spécifique : travail soutenu maîtrisé, allure cible et enchaînements spécifiques déjà planifiés.';
+ if(type==='Ironman')return 'Ironman : développer progressivement l’endurance durable, surtout à vélo, tout en préservant la récupération.';
+ if(type==='70.3')return '70.3 : développer la capacité à tenir l’allure cible avec un équilibre entre travail soutenu et endurance facile.';
+ return 'Objectif à préciser : interpréter la préparation à partir des séances réellement effectuées et de la récupération.';
+}
 function adaptiveForecast(){
  const now=new Date();now.setHours(12,0,0,0);const today=iso(now),end=new Date(now);end.setDate(end.getDate()+7);
  const start28=new Date(now);start28.setDate(start28.getDate()-27);const from28=iso(start28),start7=new Date(now);start7.setDate(start7.getDate()-6);const from7=iso(start7);
@@ -2043,7 +2090,7 @@ function adaptiveForecast(){
  try{phase=raceInfo(iso(mondayOf()));race=raceFor(iso(mondayOf()));if(race&&race.date)daysToRace=Math.round((new Date(race.date+'T12:00:00')-now)/864e5);}catch(e){}
  let fit=null,fitNow=null,fit14=null,ramp=null,formNow=null,form14=null;
  try{fit=buildFitSeries(42,end);if(fit&&fit.pts.length){const real=fit.pts.filter(x=>!x.proj),proj=fit.pts.filter(x=>x.proj);fitNow=real[real.length-1]||fit.pts[0];fit14=proj[proj.length-1]||fitNow;const at7=proj.find(x=>x.d>=iso(new Date(now.getTime()+7*864e5)))||fit14;ramp=at7.ctl-fitNow.ctl;formNow=fitNow.ctl-fitNow.atl;form14=fit14.ctl-fit14.atl;}}catch(e){}
- const ws=adaptiveWeekSignal(),longitudinal=adaptiveLongitudinalLoad(),longitudinalAdvice=adaptiveLongitudinalAdvice(longitudinal,phase,ws),flags=[],cautions=[];
+ const ws=adaptiveWeekSignal(),longitudinal=adaptiveLongitudinalLoad(),longitudinalAdvice=adaptiveLongitudinalAdvice(longitudinal,phase,ws),reality=trainingRealitySummary(plan,matchDone(),today),raceFocus=phase?raceSpecificFocus(phase.type,phase.key):'Ajoute une course cible pour activer une lecture spécifique à l’objectif.',flags=[],cautions=[];
  if(longitudinal.recentMinutesRatio!==null&&longitudinal.recentMinutesRatio>1.2)flags.push('volume réalisé sur les 7 derniers jours supérieur de plus de 20 % à la moyenne hebdomadaire des 3 semaines précédentes');
  if(longitudinal.recentSRpeRatio!==null&&longitudinal.recentSRpeRatio>1.2)flags.push('charge interne estimée (durée × RPE) en hausse de plus de 20 % par rapport à la moyenne des 3 semaines précédentes');
  if(ws.painMax>=3)cautions.push('douleur signalée : la priorité est la zone douloureuse, pas la progression de charge');
@@ -2063,14 +2110,15 @@ function adaptiveForecast(){
  if(level==='high')advice='Ne pas augmenter la charge. Vérifier les douleurs et la récupération ; envisager de réduire une séance exigeante après validation du bilan.';
  else if(level==='watch')advice='Garder les séances faciles réellement faciles, éviter les ajouts de volume et réévaluer dans 48 à 72 h.';
  if(phase&&phase.key==='taper'&&level!=='high')advice='Priorité à l’assimilation : respecter le volume réduit et conserver seulement les rappels d’intensité prévus.';
- return {level,flags,cautions,advice,longitudinalAdvice,confidence,dataCount,recentMin,futureMin,futureN,delta,ramp,formNow,form14,phase,race,daysToRace,longitudinal};
+ if(reality.total&&reality.adherence!==null&&reality.adherence<.6)cautions.push('moins de 60 % des séances du planning actuel sont réalisées : ne pas rattraper les séances manquées');if(reality.extended>0)cautions.push(reality.extended+' séance(s) réalisée(s) avec une durée supérieure de plus de 20 % au prévu : surveiller la récupération');
+ return {level,flags,cautions,advice,longitudinalAdvice,confidence,dataCount,recentMin,futureMin,futureN,delta,ramp,formNow,form14,phase,race,daysToRace,longitudinal,reality,raceFocus};
 }
 function forecastHtml(){
  const f=adaptiveForecast(),color=f.level==='high'?'var(--red)':f.level==='watch'?'var(--orange)':'var(--green)',title=f.level==='high'?'Risque de surcharge à surveiller':f.level==='watch'?'Vigilance sur les 7 prochains jours':'Charge prévisionnelle cohérente';
  const phase=f.phase?`${f.phase.name} · ${f.phase.type==='Ironman'?'Ironman':'Half Ironman'}`:'Phase de préparation non déterminée';
  const vol=f.delta===null?'comparaison impossible (historique récent insuffisant)':`${Math.round(f.futureMin/60*10)/10} h prévues sur 7 jours vs ${Math.round(f.recentMin/60*10)/10} h réalisées sur les 7 jours précédents`;
  const items=[...f.flags,...f.cautions];
- return `<div class="card" style="margin:10px 0;padding:12px;border:1px solid var(--line)"><h3 style="margin:0 0 6px">Prévision du coach · 7 jours</h3><p style="margin:0 0 5px"><strong style="color:${color}">${title}</strong></p><p style="margin:0 0 6px">${esc(phase)}${f.daysToRace!==null&&f.daysToRace>=0?` · course dans ${f.daysToRace} j`:''}</p><p style="margin:0 0 6px">${esc(vol)}${f.delta!==null?` · évolution ${f.delta>=0?'+':''}${Math.round(f.delta)} %`:''}</p>${f.ramp!==null?`<p class="hint" style="margin:4px 0">Fitness projetée : ${f.ramp>=0?'+':''}${f.ramp.toFixed(1).replace('.',',')} points sur 7 jours · forme estimée ${f.formNow===null?'—':Math.round(f.formNow)} vers ${f.form14===null?'—':Math.round(f.form14)}.</p>`:''}${items.length?`<ul style="margin:6px 0;padding-left:20px">${items.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:'<p class="hint" style="margin:4px 0">Aucun signal de hausse excessive détecté dans les données disponibles.</p>'}${f.longitudinal.sufficient?`<p class="hint" style="margin:4px 0">Tendance sur 4 semaines : ${Math.round(f.longitudinal.recentMinutes)} min réalisées sur 7 jours vs ${Math.round(f.longitudinal.priorWeeklyMinutes)} min/semaine en moyenne les 3 semaines précédentes${f.longitudinal.recentSRpeRatio!==null?` · charge durée × RPE : ${Math.round(f.longitudinal.recentSRpeRatio*100)} % de la moyenne antérieure`:''}.</p>`:'<p class="hint" style="margin:4px 0">Tendance longitudinale : données insuffisantes pour comparer les semaines.</p>'}<p class="hint" style="margin:4px 0"><strong>Lecture selon le format et la phase :</strong> ${esc(f.longitudinalAdvice)}</p><p style="margin:6px 0"><strong>Conseil :</strong> ${esc(f.advice)}</p><p class="hint" style="margin:4px 0">Fiabilité ${f.confidence} (${f.dataCount} séances réalisées sur 28 jours). Projection indicative à partir du planning et des données disponibles ; ce n’est ni un diagnostic ni une prédiction certaine. ${f.phase?'La phase et la distance de course modulent l’interprétation.':'Ajoute une course cible pour contextualiser la charge.'}</p></div>`;
+ return `<div class="card" style="margin:10px 0;padding:12px;border:1px solid var(--line)"><h3 style="margin:0 0 6px">Prévision du coach · 7 jours</h3><p style="margin:0 0 5px"><strong style="color:${color}">${title}</strong></p><p style="margin:0 0 6px">${esc(phase)}${f.daysToRace!==null&&f.daysToRace>=0?` · course dans ${f.daysToRace} j`:''}</p><p style="margin:0 0 6px">${esc(vol)}${f.delta!==null?` · évolution ${f.delta>=0?'+':''}${Math.round(f.delta)} %`:''}</p>${f.reality.total?`<div style="border-top:1px solid var(--line);margin-top:8px;padding-top:8px"><strong>Prévu / réalisé sur le planning chargé</strong><p class="hint" style="margin:4px 0">${f.reality.done}/${f.reality.total} séances réalisées · ${f.reality.missed} non réalisées · ${f.reality.keyDone}/${f.reality.keyPlanned} séances prioritaires réalisées · ${Math.round(f.reality.plannedMinutes)} min prévues / ${Math.round(f.reality.actualMinutes)} min réalisées.${f.reality.shifted?' '+f.reality.shifted+' séance(s) décalée(s).':''}${f.reality.shortened?' '+f.reality.shortened+' séance(s) raccourcie(s).':''}</p><p class="hint" style="margin:4px 0"><strong>Cap de préparation :</strong> ${esc(f.raceFocus)}</p></div>`:''}${f.ramp!==null?`<p class="hint" style="margin:4px 0">Fitness projetée : ${f.ramp>=0?'+':''}${f.ramp.toFixed(1).replace('.',',')} points sur 7 jours · forme estimée ${f.formNow===null?'—':Math.round(f.formNow)} vers ${f.form14===null?'—':Math.round(f.form14)}.</p>`:''}${items.length?`<ul style="margin:6px 0;padding-left:20px">${items.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:'<p class="hint" style="margin:4px 0">Aucun signal de hausse excessive détecté dans les données disponibles.</p>'}${f.longitudinal.sufficient?`<p class="hint" style="margin:4px 0">Tendance sur 4 semaines : ${Math.round(f.longitudinal.recentMinutes)} min réalisées sur 7 jours vs ${Math.round(f.longitudinal.priorWeeklyMinutes)} min/semaine en moyenne les 3 semaines précédentes${f.longitudinal.recentSRpeRatio!==null?` · charge durée × RPE : ${Math.round(f.longitudinal.recentSRpeRatio*100)} % de la moyenne antérieure`:''}.</p>`:'<p class="hint" style="margin:4px 0">Tendance longitudinale : données insuffisantes pour comparer les semaines.</p>'}<p class="hint" style="margin:4px 0"><strong>Lecture selon le format et la phase :</strong> ${esc(f.longitudinalAdvice)}</p><p style="margin:6px 0"><strong>Conseil :</strong> ${esc(f.advice)}</p><p class="hint" style="margin:4px 0">Fiabilité ${f.confidence} (${f.dataCount} séances réalisées sur 28 jours). Projection indicative à partir du planning et des données disponibles ; ce n’est ni un diagnostic ni une prédiction certaine. ${f.phase?'La phase et la distance de course modulent l’interprétation.':'Ajoute une course cible pour contextualiser la charge.'}</p></div>`;
 }
 function renderCoach48h(){
  const el=$('coach48hBox');if(!el)return;
@@ -2377,7 +2425,7 @@ function renderWkBilan(){
  el.innerHTML=`<p style="margin:0 0 8px"><strong>${pct===null?'Suivi en cours':pct+' % du volume prévu à date'}</strong> · ${f(D)} réalisés sur ${f(P)} prévus jusqu’à aujourd’hui${rpeAvg?` · RPE moyen ${rpeAvg}/10`:''}</p>${rows}<p class="hint">${advice}${future?` Il reste ${f(future)} planifiés après aujourd’hui.`:''}</p><p class="hint">La charge en points n’est affichée que lorsqu’elle est fournie par la source d’activité : aucune valeur manquante n’est inventée.</p>`;
  card.style.display='';
 }
-function renderToday(){renderToday0();try{renderCoach48h();}catch(e){}try{renderReview();}catch(e){}try{renderNutri();}catch(e){}try{renderGear();}catch(e){}}
+function renderToday(){renderToday0();try{renderReadinessAvailability();}catch(e){}try{renderCoach48h();}catch(e){}try{renderReview();}catch(e){}try{renderNutri();}catch(e){}try{renderGear();}catch(e){}}
 function renderToday0(){
  try{renderRpeBox();}catch(e){}
  try{renderInjBanner();}catch(e){}

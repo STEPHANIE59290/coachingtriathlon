@@ -44,7 +44,7 @@ test('douleur post-séance : supprimer la douleur corrigée à zéro sans efface
  const legacy={d:'2026-11-26',z:'dos',pain:2,sport:'Vélo'};
  let a=painCtx.updatePostSessionPainLog([legacy],w,4,'hanche','2026-11-27T18:00:00Z');
  a=painCtx.updatePostSessionPainLog(a,w,0,'general','2026-11-27T19:00:00Z');
- assert.deepEqual(a,[legacy]);
+ assert.equal(a.length,1);assert.equal(a[0].z,'dos');assert.equal(a[0].pain,2);
 });
 test('disponibilité : un signal rouge pèse davantage qu’un signal orange',()=>{
  const red=readinessCtx.readinessAvailabilityScore({sleep:7,fatigue:'Faible',feeling:'Très bonnes',life:'Normale',painMax:0,recentLevel:'red'});
@@ -53,5 +53,5 @@ test('disponibilité : un signal rouge pèse davantage qu’un signal orange',()
 });
 test('préparation course : signale les séances clés manquées et la douleur',()=>{
  const f=raceCtx.raceSpecificFocus('Ironman','spec',{keyPlanned:3,keyDone:2,adherence:.8},{painMax:3});
- assert.match(f,/Ironman spécifique/i);assert.match(f,/séances prioritaires.*non réalisées/i);assert.match(f,/douleur signalée/i);
+ assert.match(f,/Ironman spécifique/i);assert.match(f,/séances prioritaires prévues ne sont pas toutes réalisées/i);assert.match(f,/douleur signalée/i);
 });

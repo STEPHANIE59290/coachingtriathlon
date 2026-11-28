@@ -1,17 +1,18 @@
 name: Tests du moteur d'adaptation
 
 on:
-  push:
-    branches:
-      - dev/tests-moteur-adaptation
   pull_request:
     branches:
       - main
     paths:
       - "index.html"
-      - "tests/test_adaptive_engine.mjs"
-      - "tests/test_training_roles.mjs"\n      - "tests/test_brick_integrity.mjs tests/test_longitudinal_load.mjs"
+      - "public/index.html"
+      - "tests/**"
       - ".github/workflows/adaptive-tests.yml"
+  push:
+    branches:
+      - main
+      - feature/longitudinal-load-trend
 
 permissions:
   contents: read
@@ -28,4 +29,4 @@ jobs:
         with:
           node-version: 20
       - name: Exécuter les tests
-        run: node --test tests/test_adaptive_engine.mjs tests/test_training_roles.mjs tests/test_brick_integrity.mjs
+        run: node --test tests/test_adaptive_engine.mjs tests/test_training_roles.mjs tests/test_brick_integrity.mjs tests/test_longitudinal_load.mjs

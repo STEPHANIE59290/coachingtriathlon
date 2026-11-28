@@ -90,6 +90,9 @@ details.icu{border:1px solid var(--line);border-radius:12px;padding:9px 11px;mar
 #bilanCard{order:10}#quickFeel{order:2}#quickDigest{order:3}#wkReview{order:12}#raceDebrief{order:13}#goNoGo{order:14}#heatCard{order:15}#rehearsal{order:16}#skills{order:17}#milestones{order:18}#drills{order:19}#prevCard{order:30}#gearCard{order:31}#wxCard{order:32}#todoCard{order:4}#injBanner{order:5}#todayCard{order:1}#rpeCard{order:6}#nutriCard{order:20}#reviewCard{order:21}#home>div:has(#homePlan){order:8} #home>div:has(#weekHours){order:29}#wkBilanCard{order:22}#coachCard{order:7}#pathCard{order:23}#backupBox{order:24}#raceCard{order:25}#forecastCard{order:26}#raceFileCard{order:27}#wellCard{order:28}#home> .homeHero{order:0}
 @media(max-width:390px){.heroMark{font-size:19px}}
 
+
+/* Module récupération masqué visuellement, code et données conservés */
+#wellCard{display:none!important}
 </style>
 </head>
 <body>
@@ -117,8 +120,8 @@ details.icu{border:1px solid var(--line);border-radius:12px;padding:9px 11px;mar
 <div id="heatCard"></div>
 <div id="rehearsal"></div>
 <div id="skills"></div>
-<div id="milestones"></div>
-<div id="drills"></div>
+
+
 
 
 <div class="card fold closed" id="wxCard"><h2 class="fh">Météo et conseils</h2><div id="wxBox"></div></div>
@@ -141,6 +144,7 @@ details.icu{border:1px solid var(--line);border-radius:12px;padding:9px 11px;mar
 </section>
 
 <section id="course" class="panel">
+<div id="milestones"></div>
 <div class="card fold closed" id="raceCard"><h2 class="fh">Plan jusqu’à la course</h2><div id="raceBox"></div></div>
 <div class="card fold closed" id="forecastCard"><h2 class="fh">Prévision et fiche de course</h2><div id="forecastBox"></div></div>
 <div class="card fold closed" id="raceFileCard"><h2 class="fh">Dossier de course</h2><div id="raceFileBox"></div></div>
@@ -923,6 +927,7 @@ function init(){
  try{syncSpecialWeek();}catch(e){}
  try{showSelfTests();}catch(e){}
  try{renderQuickDigest();renderWkReview();renderRaceDebrief();renderGear();renderRehearsal();renderSkills();renderGoNoGo();renderHeat();renderMilestones();renderDrills();}catch(e){}
+ try{const d=document.getElementById('drills'),t=document.getElementById('testCard');if(d&&t)t.appendChild(d);const m=document.getElementById('milestones'),c=document.getElementById('course');if(m&&c&&!c.contains(m))c.insertBefore(m,c.firstChild);}catch(e){}
  try{renderPrev();}catch(e){}
  try{renderBests();renderGear();}catch(e){}try{renderDur();renderSweat();renderYear();}catch(e){}
  try{if(navigator.storage&&navigator.storage.persist)navigator.storage.persist();}catch(e){}

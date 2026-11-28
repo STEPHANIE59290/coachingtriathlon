@@ -1866,7 +1866,24 @@ function renderInjBanner(){
  let load='';try{const S=buildFitSeries(7,new Date()),pt=S&&S.pts.filter(q=>!q.proj).pop();if(pt&&pt.ctl>5&&pt.atl/pt.ctl>1.5)load='<div class="warn" style="margin-bottom:12px"><strong>Charge récente élevée</strong> : ta fatigue dépasse 1,5 fois ta fitness. Privilégie le facile ou le repos, et consulte en cas de douleur inhabituelle, de fièvre ou de gêne persistante.</div>';}catch(e){}
  el.innerHTML=load+sleepBanner()+painHtml(i)+(i?`<div class="warn" style="margin-bottom:12px"><strong>Blessure en cours</strong> : ${esc(i.type)}${i.zone?' · '+esc(i.zone):''}. ${i.blocked.length?'Sports bloqués : '+esc(i.blocked.map(q=>INJ_LABEL[q]).join(', '))+' (retirés du planning).':'Gêne sans sport bloqué : séances de qualité et longues remplacées par du facile.'}<div class="actions" style="margin-top:8px"><button class="secondary" onclick="healInjury()">Blessure guérie</button></div></div>`:'');
 }
-function saveReadiness(){put('readiness',{date:iso(new Date()),sleep:$('sleep').value,fatigue:$('fatigue').value,feeling:$('feeling').value,life:$('lifeLoad').value,time:$('todayTime').value});{const RL=get('rdLog',{});RL[iso(new Date())]={lvl:readinessState().level,sleep:$('sleep').value,fatigue:$('fatigue').value,feeling:$('feeling').value,life:$('lifeLoad').value};Object.keys(RL).sort().slice(0,-60).forEach(k=>delete RL[k]);put('rdLog',RL);}renderRdLog();const im=saveInjury();toast('Bilan du jour enregistré.'+im);}
+function readinessAvailabilityScore(data){
+ const d=data||{};let score=100;const factors=[];const add=(n,s)=>{score-=n;factors.push(s);};
+ const sleep=Number(d.sleep);if(d.sleep!==''&&Number.isFinite(sleep)&&sleep<5.5)add(25,'sommeil court');else if(d.sleep!==''&&Number.isFinite(sleep)&&sleep<6.5)add(12,'sommeil un peu court');
+ if(d.fatigue==='Élevée')add(25,'fatigue élevée');else if(d.fatigue==='Modérée')add(10,'fatigue modérée');
+ if(d.feeling==='Mauvaises')add(25,'mauvaises sensations');else if(d.feeling==='Moyennes')add(12,'sensations moyennes');
+ if(d.life==='Élevée')add(8,'charge de vie élevée');else if(d.life==='Nuit hachée')add(5,'nuit hachée');
+ if(+d.painMax>=4)add(35,'douleur importante signalée');else if(+d.painMax>=3)add(18,'douleur à surveiller');
+ if(d.recentLevel==='amber')add(15,'signal de récupération récent');else if(d.recentLevel==='soft')add(8,'efforts récents exigeants');
+ score=Math.max(0,Math.min(100,Math.round(score)));return {score,factors,band:score>=80?'bonne':score>=60?'modérée':score>=40?'faible':'très faible'};
+}
+function currentReadinessAvailability(){
+ const week=adaptiveWeekSignal(),prev=previousGlobalSessionSignal();
+ return readinessAvailabilityScore({sleep:$('sleep')?$('sleep').value:'',fatigue:$('fatigue')?$('fatigue').value:'',feeling:$('feeling')?$('feeling').value:'',life:$('lifeLoad')?$('lifeLoad').value:'',painMax:week.painMax||0,recentLevel:prev&&prev.level});
+}
+function renderReadinessAvailability(){
+ const el=$('readiness');if(!el)return;const s=currentReadinessAvailability(),why=s.factors.length?s.factors.join(' · '):'aucun facteur défavorable renseigné';
+ el.innerHTML='<strong>Disponibilité indicative : '+s.score+'/100 · '+s.band+'</strong><br><span class="hint">Repère d’aide à la décision, pas une mesure médicale. Facteurs : '+esc(why)+'. Le bilan qualitatif et les douleurs restent prioritaires.</span>';
+}function saveReadiness(){const availability=currentReadinessAvailability();put('readiness',{date:iso(new Date()),sleep:$('sleep').value,fatigue:$('fatigue').value,feeling:$('feeling').value,life:$('lifeLoad').value,time:$('todayTime').value,availability:availability.score});{const RL=get('rdLog',{});RL[iso(new Date())]={lvl:readinessState().level,sleep:$('sleep').value,fatigue:$('fatigue').value,feeling:$('feeling').value,life:$('lifeLoad').value,availability:availability.score};Object.keys(RL).sort().slice(0,-60).forEach(k=>delete RL[k]);put('rdLog',RL);}renderRdLog();const im=saveInjury();renderReadinessAvailability();toast('Bilan du jour enregistré.'+im);}
 
 // ---- Bilan du jour → séance du jour ----
 // Niveaux : rest (0 min dispo), red, amber, soft (fatigue modérée seule), green

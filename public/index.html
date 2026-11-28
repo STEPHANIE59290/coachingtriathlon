@@ -354,7 +354,7 @@ window.addEventListener('unhandledrejection',ev=>logErr('promesse',ev.reason));
 const get=(k,d)=>{try{return JSON.parse(STORE.getItem('half04_'+k))??d}catch(e){return d}};
 const put=(k,v)=>{try{STORE.setItem('half04_'+k,JSON.stringify(v));try{sbDirty(k);}catch(_){}return true}catch(e){logErr('stockage',e);if(!storageWarned){storageWarned=true;notify('Le stockage local est indisponible (navigation privée ou accès bloqué) : tes données ne seront pas conservées. Pense à exporter.');}return false}};
 // ---- Versions : une mise à jour ne modifie jamais ton contenu ni ton historique ----
-const APP_VERSION='2.20.44',DATA_VERSION=1;
+const APP_VERSION='2.20.45',DATA_VERSION=1;
 const MIGRATIONS={ // n : fonction idempotente qui fait passer les données de la version n-1 à n (ex. 2:()=>{...})
 };
 (function migrateData(){
@@ -2660,7 +2660,7 @@ const isoLocal=(day,minutes)=>{const z=new Date(day.getFullYear(),day.getMonth()
 const ICU_API='https://intervals.icu/api/v1/athlete/0/events/bulk'; // athlète 0 = propriétaire de la clé
 function icuStatus(msg,bad){const s=$('icuStatus');if(s){s.textContent=msg;s.className=bad?'warn':'hint';}}
 function icuKeyVal(){const v=($('icuKey').value||'').trim();if(v)return v;const k=get('icuKey',null);if(k){$('icuKey').value=k;return String(k).trim();}return '';}
-function saveIcuKey(){const k=($('icuKey').value||'').trim(),on=$('icuRemember').checked;put('icuRemember',on);if(!on){put('icuKey',null);return;}if(k)put('icuKey',k);}
+function saveIcuKey(){const k=($('icuKey').value||'').trim(),on=$('icuRemember').checked;put('icuRemember',on);if(!on){put('icuKey',null);return;}if(k){put('icuKey',k);if(get('icuKey',null)!==k)icuStatus('La clé n’a pas pu être mémorisée sur cet appareil (stockage bloqué ou plein).');}}
 function forgetIcuKey(){put('icuKey',null);put('icuRemember',false);$('icuKey').value='';$('icuRemember').checked=false;icuStatus('Clé effacée de cet appareil.');}
 let icuSyncBusy=false,icuPlanSendBusy=false;
 async function syncIcuOnKeyReady(){const key=icuKeyVal();if(!key)return;if(!$('icuRemember').checked){icuStatus('Coche « Mémoriser la clé » pour activer la synchronisation automatique à l’ouverture.');return;}if(get('icuAuto',true))await syncIcuImports(true);}

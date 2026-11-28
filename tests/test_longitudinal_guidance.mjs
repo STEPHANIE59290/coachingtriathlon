@@ -1,0 +1,18 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import vm from 'node:vm';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+const HERE=path.dirname(fileURLToPath(import.meta.url));
+const html=fs.readFileSync(path.join(HERE,'..','index.html'),'utf8');
+const start=html.indexOf('function adaptiveLongitudinalAdvice('),end=html.indexOf('function adaptiveForecast(',start);
+assert.ok(start>=0&&end>start,'Fonction de recommandation longitudinale introuvable');
+const context={};vm.createContext(context);vm.runInContext(html.slice(start,end),context,{timeout:1000});
+const trend={sufficient:true,recentMinutesRatio:1.3,recentSRpeRatio:1.25};
+const week={painMax:0,level:'green'};
+test('Ironman spécifique : priorité endurance vélo et enchaînements prévus',()=>assert.match(context.adaptiveLongitudinalAdvice(trend,{type:'Ironman',key:'spec'},week),/endurance vélo/i));
+test('70.3 spécifique : conserve les rappels à allure cible',()=>assert.match(context.adaptiveLongitudinalAdvice(trend,{type:'70.3',key:'spec'},week),/allure cible/i));
+test('affûtage : ne compense pas la baisse de charge',()=>assert.match(context.adaptiveLongitudinalAdvice(trend,{type:'Ironman',key:'taper'},week),/Ne pas compenser/i));
+test('douleur ou récupération rouge : priorité à la récupération',()=>assert.match(context.adaptiveLongitudinalAdvice(trend,{type:'70.3',key:'spec'},{painMax:3,level:'green'}),/douleurs priment/i));
+test('historique insuffisant : aucune conclusion de progression',()=>assert.match(context.adaptiveLongitudinalAdvice({sufficient:false},null,week),/Historique trop court/i));

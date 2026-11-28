@@ -405,7 +405,7 @@ function sbApply(kv){
  sbWipeLocal(false);Object.keys(kv).forEach(n=>{try{localStorage.setItem('half04_'+n,kv[n]);}catch(e){}});
 }
 // ---- Fusion séance par séance quand deux appareils ont modifié le compte ----
-const MERGE_ID={history:w=>w.ext||(w.date+'|'+w.sport+'|'+w.duration+'|'+(w.notes||'')),races:r=>r.id,tests:t=>t.type+'|'+t.date,painLog:x=>x.d+'|'+x.z,gear:g=>g.id};
+const MERGE_ID={history:w=>w.ext||(w.date+'|'+w.sport+'|'+w.duration+'|'+(w.notes||'')),races:r=>r.id,tests:t=>t.type+'|'+t.date,painLog:x=>x.id||x.d+'|'+x.z+'|'+(x.sport||'')+'|'+(x.at||''),gear:g=>g.id};
 const MERGE_MAP=new Set(['rdLog','digest','wkReview','courses','skillLog','specialWeeks','feel','rehearsal']);
 function sbMerge(loc,rem){const out={};
  new Set([...Object.keys(loc),...Object.keys(rem)]).forEach(k=>{
@@ -605,17 +605,26 @@ function renderQuickFeel(){const el=$('quickFeel');if(!el)return;
  <div class="grid"><div><label for="postRpe">Difficulté ressentie (RPE /10)</label><select id="postRpe"><option value="">À renseigner</option>${opts(1,10,f.rpe||w.rpe)}</select></div>
  <div><label for="postFeel">Forme en fin de séance (1 très bien – 5 épuisé)</label><select id="postFeel"><option value="">À renseigner</option>${opts(1,5,f.feel||w.feel)}</select></div>
  <div><label for="postPain">Douleur ou gêne (0–10)</label><select id="postPain">${opts(0,10,f.pain??w.pain??0)}</select></div>
+ <div><label for="postPainZone">Zone concernée</label><select id="postPainZone"><option value="general"${(f.painZone||'general')==='general'?' selected':''}>Générale / non localisée</option><option value="hanche"${f.painZone==='hanche'?' selected':''}>Hanche / fessiers</option><option value="achille"${f.painZone==='achille'?' selected':''}>Mollet / tendon d’Achille</option><option value="genou"${f.painZone==='genou'?' selected':''}>Genou</option><option value="dos"${f.painZone==='dos'?' selected':''}>Dos / lombaires</option><option value="epaule"${f.painZone==='epaule'?' selected':''}>Épaule</option><option value="pied"${f.painZone==='pied'?' selected':''}>Pied / cheville</option></select></div>
  <div><label for="postFuel">Nutrition / hydratation</label><select id="postFuel"><option value="">Non renseigné / sans objet</option><option value="ok"${f.fuel==='ok'?' selected':''}>Bien tolérées</option><option value="peu"${f.fuel==='peu'?' selected':''}>Apports insuffisants</option><option value="dig"${f.fuel==='dig'?' selected':''}>Problème digestif</option></select></div></div>
  <label for="postNotes">Commentaire (facultatif)</label><textarea id="postNotes" rows="2" maxlength="400" placeholder="Ex. jambes lourdes, bonne respiration, gêne ischio gauche…">${esc(f.postNotes||w.postSession?.notes||'')}</textarea>
  <div class="actions"><button class="primary" onclick="savePostSession(${i})">Enregistrer mon bilan</button></div><p class="hint">Le bilan est enregistré dans ton historique. Une douleur importante, inhabituelle ou persistante doit être évaluée avec un professionnel de santé.</p></div>`;
 }
+function updatePostSessionPainLog(entries,w,pain,zone,at){
+ const out=Array.isArray(entries)?entries.slice():[],sessionKey=String(w.ext||w.id||[w.date,w.sport,w.duration,w.notes||''].join('|')),id='post-'+sessionKey;
+ const index=out.findIndex(x=>x&&x.id===id);
+ if(+pain>0){const item={id,d:w.date||iso(new Date()),z:zone||'general',pain:+pain,sport:w.sport||'',source:'postSession',at:at||new Date().toISOString()};if(index>=0)out[index]=item;else out.push(item);}
+ else if(index>=0)out.splice(index,1);
+ while(out.length>100)out.shift();return out;
+}
 function savePostSession(i){const w=workouts[i];if(!w)return;
- const rpe=$('postRpe').value,feel=$('postFeel').value,pain=$('postPain').value,fuel=$('postFuel').value,notes=$('postNotes').value.trim().slice(0,400);
+ const rpe=$('postRpe').value,feel=$('postFeel').value,pain=$('postPain').value,zone=$('postPainZone').value,fuel=$('postFuel').value,notes=$('postNotes').value.trim().slice(0,400);
  if(!rpe){notify('Renseigne au minimum la difficulté ressentie (RPE).');return;}
- const at=new Date().toISOString(),entry={rpe:String(rpe),feel:feel?String(feel):'',pain:String(pain),fuel,postNotes:notes,completedAt:at};
+ const at=new Date().toISOString(),entry={rpe:String(rpe),feel:feel?String(feel):'',pain:String(pain),painZone:zone,fuel,postNotes:notes,completedAt:at};
  w.rpe=String(rpe);if(feel)w.feel=+feel;w.pain=+pain;w.postSession={...entry,notes};
+ put('painLog',updatePostSessionPainLog(get('painLog',[]),w,+pain,zone,at));
  if(w.ext){const F=get('feel',{});F[w.ext]={...(F[w.ext]||{}),...entry};put('feel',F);}
- put('history',workouts);renderHistory();try{renderToday();}catch(e){}toast('Bilan post-séance enregistré : le coach en tient compte pour les prochaines 48 h.');
+ put('history',workouts);renderHistory();try{renderToday();}catch(e){}renderInjBanner();renderReadinessAvailability();toast('Bilan post-séance enregistré : le coach en tient compte pour les prochaines 48 h.');
 }
 function quickRpe(i,v){const w=workouts[i];if(!w)return;
  if(w.ext)setFeel(w.ext,'rpe',String(v));else{w.rpe=String(v);put('history',workouts);renderHistory();}
@@ -1888,12 +1897,13 @@ function readinessAvailabilityScore(data){
  if(d.feeling==='Mauvaises')add(25,'mauvaises sensations');else if(d.feeling==='Moyennes')add(12,'sensations moyennes');
  if(d.life==='Élevée')add(8,'charge de vie élevée');else if(d.life==='Nuit hachée')add(5,'nuit hachée');
  if(+d.painMax>=4)add(35,'douleur importante signalée');else if(+d.painMax>=3)add(18,'douleur à surveiller');
- if(d.recentLevel==='amber')add(15,'signal de récupération récent');else if(d.recentLevel==='soft')add(8,'efforts récents exigeants');
+ if(d.recentLevel==='red')add(25,'signal de récupération rouge');else if(d.recentLevel==='amber')add(15,'signal de récupération récent');else if(d.recentLevel==='soft')add(8,'efforts récents exigeants');
  score=Math.max(0,Math.min(100,Math.round(score)));return {score,factors,band:score>=80?'bonne':score>=60?'modérée':score>=40?'faible':'très faible'};
 }
 function currentReadinessAvailability(){
  const week=adaptiveWeekSignal(),prev=previousGlobalSessionSignal(),since=iso(new Date(Date.now()-7*864e5)),loggedPain=get('painLog',[]).filter(x=>x&&x.d>=since).reduce((m,x)=>Math.max(m,+x.pain||0),0),painMax=Math.max(week.painMax||0,loggedPain);
- return readinessAvailabilityScore({sleep:$('sleep')?$('sleep').value:'',fatigue:$('fatigue')?$('fatigue').value:'',feeling:$('feeling')?$('feeling').value:'',life:$('lifeLoad')?$('lifeLoad').value:'',painMax,recentLevel:prev&&prev.level});
+ const recentLevel=['red','amber','soft'].includes(week.level)?week.level:(prev&&prev.level);
+ return readinessAvailabilityScore({sleep:$('sleep')?$('sleep').value:'',fatigue:$('fatigue')?$('fatigue').value:'',feeling:$('feeling')?$('feeling').value:'',life:$('lifeLoad')?$('lifeLoad').value:'',painMax,recentLevel});
 }
 function renderReadinessAvailability(){
  const el=$('readiness');if(!el)return;const s=currentReadinessAvailability(),why=s.factors.length?s.factors.join(' · '):'aucun facteur défavorable renseigné';
@@ -2064,17 +2074,34 @@ function adaptiveLongitudinalAdvice(trend,phase,week){
 // Synthèse du planning réellement exécuté : informative, sans rattrapage automatique.
 function trainingRealitySummary(planItems,doneItems,throughDate){
  const eligible=(planItems||[]).map((x,i)=>({x,i})).filter(({x})=>x&&!x.event&&!x.opener&&(+x.min||0)>0&&(!throughDate||typeof planDayISO!=='function'||planDayISO(x.day)<=throughDate));
- const rows=eligible.map(({x,i})=>{const w=(doneItems||[])[i]||null,planned=+x.min||0,actual=w?(+w.duration||+w.min||0):0;return {role:adaptiveRoleOf(x),planned,actual,done:!!w,shifted:!!(w&&w.shifted)};});
- const total=rows.length,done=rows.filter(x=>x.done).length,key=rows.filter(x=>x.role==='key');
- return {total,done,missed:total-done,adherence:total?done/total:null,plannedMinutes:rows.reduce((a,x)=>a+x.planned,0),actualMinutes:rows.reduce((a,x)=>a+x.actual,0),shortened:rows.filter(x=>x.done&&x.actual<x.planned*.8).length,extended:rows.filter(x=>x.done&&x.actual>x.planned*1.2).length,shifted:rows.filter(x=>x.shifted).length,keyPlanned:key.length,keyDone:key.filter(x=>x.done).length};
+ const rows=eligible.map(({x,i})=>{const w=(doneItems||[])[i]||null,planned=+x.min||0,actual=w?(+w.duration||+w.min||0):0,rpe=w?+(w.postSession&&w.postSession.rpe||w.rpe||0):0,pain=w?+((w.postSession&&w.postSession.pain)??w.pain??0):0;return {role:adaptiveRoleOf(x),sport:x.sport||'',intensity:x.intensity||'',planned,actual,done:!!w,shifted:!!(w&&w.shifted),rpe,pain,load:rpe>0?actual*rpe:0};});
+ const total=rows.length,done=rows.filter(x=>x.done).length,key=rows.filter(x=>x.role==='key'),rated=rows.filter(x=>x.done&&x.rpe>0);
+ const roles={};['key','support','easy','unclassified'].forEach(role=>{const a=rows.filter(x=>x.role===role);roles[role]={planned:a.length,done:a.filter(x=>x.done).length,plannedMinutes:a.reduce((n,x)=>n+x.planned,0),actualMinutes:a.reduce((n,x)=>n+x.actual,0)};});
+ return {total,done,missed:total-done,adherence:total?done/total:null,plannedMinutes:rows.reduce((a,x)=>a+x.planned,0),actualMinutes:rows.reduce((a,x)=>a+x.actual,0),shortened:rows.filter(x=>x.done&&x.actual<x.planned*.8).length,extended:rows.filter(x=>x.done&&x.actual>x.planned*1.2).length,shifted:rows.filter(x=>x.shifted).length,keyPlanned:key.length,keyDone:key.filter(x=>x.done).length,roles,avgRpe:rated.length?rated.reduce((a,x)=>a+x.rpe,0)/rated.length:null,maxPain:rows.reduce((a,x)=>Math.max(a,x.pain),0),internalLoad:rows.reduce((a,x)=>a+x.load,0),unexpectedHard:rows.filter(x=>x.done&&x.rpe>=8&&(x.role==='easy'||/facile/i.test(x.intensity))).length};
 }
-function raceSpecificFocus(type,key){
- if(key==='taper'||key==='race')return 'Affûtage : conserver les rappels courts prévus, réduire la fatigue et ne pas compenser le volume.';
- if(type==='Ironman'&&key==='spec')return 'Ironman spécifique : durabilité à vélo, enchaînements prévus et répétition de la stratégie nutritionnelle.';
- if(type==='70.3'&&key==='spec')return '70.3 spécifique : travail soutenu maîtrisé, allure cible et enchaînements spécifiques déjà planifiés.';
- if(type==='Ironman')return 'Ironman : développer progressivement l’endurance durable, surtout à vélo, tout en préservant la récupération.';
- if(type==='70.3')return '70.3 : développer la capacité à tenir l’allure cible avec un équilibre entre travail soutenu et endurance facile.';
- return 'Objectif à préciser : interpréter la préparation à partir des séances réellement effectuées et de la récupération.';
+function trainingRealityAdvice(reality){
+ if(!reality||!reality.total)return [];
+ const out=[];
+ if(reality.keyPlanned>reality.keyDone)out.push((reality.keyPlanned-reality.keyDone)+' séance(s) prioritaire(s) non réalisée(s) : comprendre la cause avant de réorganiser le plan, sans les rattraper en bloc.');
+ if(reality.shortened>0)out.push(reality.shortened+' séance(s) raccourcie(s) : conserver les minutes manquantes comme non réalisées, sans compensation automatique.');
+ if(reality.extended>0)out.push(reality.extended+' séance(s) plus longue(s) que prévu : tenir compte de la charge réellement ajoutée dans la récupération.');
+ if(reality.unexpectedHard>0)out.push(reality.unexpectedHard+' séance(s) facile(s) ressentie(s) comme très difficiles (RPE ≥ 8) : vérifier récupération, intensité et contexte.');
+ if(reality.maxPain>=3)out.push('Douleur signalée pendant une séance : suivre sa localisation et son évolution avant toute progression.');
+ if(reality.avgRpe!==null&&reality.avgRpe>=8)out.push('RPE moyen élevé sur les séances réalisées : ne pas augmenter la charge sur la seule base du volume.');
+ return out;
+}
+function raceSpecificFocus(type,key,reality,week){
+ let focus;
+ if(key==='taper'||key==='race')focus='Affûtage : conserver les rappels courts prévus, réduire la fatigue et ne pas compenser le volume.';
+ else if(type==='Ironman'&&key==='spec')focus='Ironman spécifique : durabilité à vélo, enchaînements prévus et répétition de la stratégie nutritionnelle.';
+ else if(type==='70.3'&&key==='spec')focus='70.3 spécifique : travail soutenu maîtrisé, allure cible et enchaînements spécifiques déjà planifiés.';
+ else if(type==='Ironman')focus='Ironman : développer progressivement l’endurance durable, surtout à vélo, tout en préservant la récupération.';
+ else if(type==='70.3')focus='70.3 : développer la capacité à tenir l’allure cible avec un équilibre entre travail soutenu et endurance facile.';
+ else focus='Objectif à préciser : interpréter la préparation à partir des séances réellement effectuées et de la récupération.';
+ if(reality&&reality.keyPlanned>0&&reality.keyDone<reality.keyPlanned)focus+=' Les séances prioritaires prévues ne sont pas toutes réalisées : identifier le frein avant de modifier la charge.';
+ if(reality&&reality.adherence!==null&&reality.adherence<.6)focus+=' L’adhérence au plan est faible : simplifier les contraintes plutôt que densifier les semaines suivantes.';
+ if(week&&week.painMax>=3)focus+=' La douleur signalée reste prioritaire sur les objectifs de performance.';
+ return focus;
 }
 function adaptiveForecast(){
  const now=new Date();now.setHours(12,0,0,0);const today=iso(now),end=new Date(now);end.setDate(end.getDate()+7);
@@ -2090,7 +2117,7 @@ function adaptiveForecast(){
  try{phase=raceInfo(iso(mondayOf()));race=raceFor(iso(mondayOf()));if(race&&race.date)daysToRace=Math.round((new Date(race.date+'T12:00:00')-now)/864e5);}catch(e){}
  let fit=null,fitNow=null,fit14=null,ramp=null,formNow=null,form14=null;
  try{fit=buildFitSeries(42,end);if(fit&&fit.pts.length){const real=fit.pts.filter(x=>!x.proj),proj=fit.pts.filter(x=>x.proj);fitNow=real[real.length-1]||fit.pts[0];fit14=proj[proj.length-1]||fitNow;const at7=proj.find(x=>x.d>=iso(new Date(now.getTime()+7*864e5)))||fit14;ramp=at7.ctl-fitNow.ctl;formNow=fitNow.ctl-fitNow.atl;form14=fit14.ctl-fit14.atl;}}catch(e){}
- const ws=adaptiveWeekSignal(),longitudinal=adaptiveLongitudinalLoad(),longitudinalAdvice=adaptiveLongitudinalAdvice(longitudinal,phase,ws),reality=trainingRealitySummary(plan,matchDone(),today),raceFocus=phase?raceSpecificFocus(phase.type,phase.key):'Ajoute une course cible pour activer une lecture spécifique à l’objectif.',flags=[],cautions=[];
+ const ws=adaptiveWeekSignal(),longitudinal=adaptiveLongitudinalLoad(),longitudinalAdvice=adaptiveLongitudinalAdvice(longitudinal,phase,ws),reality=trainingRealitySummary(plan,matchDone(),today),realityAdvice=trainingRealityAdvice(reality),raceFocus=phase?raceSpecificFocus(phase.type,phase.key,reality,ws):'Ajoute une course cible pour activer une lecture spécifique à l’objectif.',flags=[],cautions=[];
  if(longitudinal.recentMinutesRatio!==null&&longitudinal.recentMinutesRatio>1.2)flags.push('volume réalisé sur les 7 derniers jours supérieur de plus de 20 % à la moyenne hebdomadaire des 3 semaines précédentes');
  if(longitudinal.recentSRpeRatio!==null&&longitudinal.recentSRpeRatio>1.2)flags.push('charge interne estimée (durée × RPE) en hausse de plus de 20 % par rapport à la moyenne des 3 semaines précédentes');
  if(ws.painMax>=3)cautions.push('douleur signalée : la priorité est la zone douloureuse, pas la progression de charge');
@@ -2110,7 +2137,7 @@ function adaptiveForecast(){
  if(level==='high')advice='Ne pas augmenter la charge. Vérifier les douleurs et la récupération ; envisager de réduire une séance exigeante après validation du bilan.';
  else if(level==='watch')advice='Garder les séances faciles réellement faciles, éviter les ajouts de volume et réévaluer dans 48 à 72 h.';
  if(phase&&phase.key==='taper'&&level!=='high')advice='Priorité à l’assimilation : respecter le volume réduit et conserver seulement les rappels d’intensité prévus.';
- if(reality.total&&reality.adherence!==null&&reality.adherence<.6)cautions.push('moins de 60 % des séances du planning actuel sont réalisées : ne pas rattraper les séances manquées');if(reality.extended>0)cautions.push(reality.extended+' séance(s) réalisée(s) avec une durée supérieure de plus de 20 % au prévu : surveiller la récupération');
+ cautions.push(...realityAdvice);
  return {level,flags,cautions,advice,longitudinalAdvice,confidence,dataCount,recentMin,futureMin,futureN,delta,ramp,formNow,form14,phase,race,daysToRace,longitudinal,reality,raceFocus};
 }
 function forecastHtml(){

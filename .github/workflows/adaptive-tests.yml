@@ -29,4 +29,4 @@ jobs:
         with:
           node-version: 20
       - name: Exécuter les tests
-        run: node --test tests/test_adaptive_engine.mjs tests/test_training_roles.mjs tests/test_brick_integrity.mjs tests/test_longitudinal_load.mjs tests/test_longitudinal_guidance.mjs tests/test_coaching_intelligence.mjs
+        run: node --test tests/test_adaptive_engine.mjs tests/test_training_roles.mjs tests/test_brick_integrity.mjs tests/test_longitudinal_load.mjs tests/test_longitudinal_guidance.mjs tests/test_coaching_intelligence.mjs tests/test_coaching_integration.mjs

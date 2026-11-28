@@ -356,3 +356,8 @@ test('bilans orange : deux jours ne suffisent pas, trois jours donnent amber', (
   assert.equal(at3.level, 'amber');
   assert.equal(at3.amberDays, 3);
 });
+
+
+test('tendance longitudinale : compare les 7 derniers jours aux 3 semaines précédentes',()=>{const workouts=[];for(let d=-27;d<=-8;d+=3)workouts.push(session('Vélo',{date:dateOffset(d),duration:60,rpe:5}));for(let d=-6;d<=-1;d+=2)workouts.push(session('Vélo',{date:dateOffset(d),duration:90,rpe:7}));const trend=fixture({workouts}).context.adaptiveLongitudinalLoad();assert.equal(trend.sufficient,true);assert.equal(trend.recentSessions,3);assert.ok(trend.recentMinutesRatio>1.2);assert.ok(trend.recentSRpeRatio>1.2);});
+test('tendance longitudinale : historique trop court reste indéterminé',()=>{const trend=fixture({workouts:[session('Course',{date:dateOffset(-1),rpe:6})]}).context.adaptiveLongitudinalLoad();assert.equal(trend.sufficient,false);assert.equal(trend.recentMinutesRatio,null);assert.equal(trend.recentSRpeRatio,null);});
+test('tendance longitudinale : absence de RPE ne fabrique pas une charge interne',()=>{const workouts=[];for(let d=-27;d<=-8;d+=3)workouts.push(session('Vélo',{date:dateOffset(d),duration:60}));for(let d=-6;d<=-1;d+=2)workouts.push(session('Vélo',{date:dateOffset(d),duration:90}));const trend=fixture({workouts}).context.adaptiveLongitudinalLoad();assert.equal(trend.sufficient,true);assert.ok(trend.recentMinutesRatio>1.2);assert.equal(trend.recentSRpeRatio,null);});

@@ -104,7 +104,7 @@ test('séances réalisées, événements, openers et séances faciles restent in
     futurePlan('Course'),
     futurePlan('Vélo', { event: true }),
     futurePlan('Natation', { opener: true }),
-    futurePlan('Course', { date: dateOffset(1), quality: false, long: false, min: 45 }),
+    futurePlan('Course', { date: dateOffset(1), quality: false, long: false, min: 45, trainingRole: 'easy' }),
     futurePlan('Vélo', { date: dateOffset(9) }),
     futurePlan('Course', { date: dateOffset(2), title: 'Séance déjà réalisée' }),
   ];

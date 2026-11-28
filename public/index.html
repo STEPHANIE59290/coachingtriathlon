@@ -443,7 +443,8 @@ async function sbPush(){
    r=await sbFetch('/rest/v1/app_state?user_id=eq.'+sbSess.uid+'&rev=eq.'+m.rev,{method:'PATCH',headers:{Prefer:'return=representation'},body:JSON.stringify({data:payload,rev:m.rev+1,updated_at:now})});
    if(r.ok){const j=await r.json();if(!j.length)conflict=true;else sbSetMeta({rev:j[0].rev,uid:sbSess.uid,dirty:false,at:now});}
   }
- }catch(e){}
+  if(r&&!r.ok&&r.status!==409){let t='';try{t=(await r.clone().text()).slice(0,200);}catch(_){}logErr('synchro envoi','HTTP '+r.status+' '+t);}
+ }catch(e){logErr('synchro envoi',e);}
  sbBusy=false;
  if(conflict){if(await sbPull(false))setTimeout(()=>location.reload(),1500);}
  sbStatus();

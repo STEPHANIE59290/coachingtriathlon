@@ -46,6 +46,10 @@ function fixture({ workouts = [], rdLog = {}, plan = [], done = [] } = {}) {
   };
   vm.createContext(context);
   vm.runInContext(engineSource, context, { timeout: 1000 });
+  const proposalStart = html.indexOf('function proposeFor(');
+  const proposalEnd = html.indexOf('function adaptSession(', proposalStart);
+  assert.ok(proposalStart >= 0 && proposalEnd > proposalStart, 'Fonction proposeFor introuvable dans index.html');
+  vm.runInContext(html.slice(proposalStart, proposalEnd), context, { timeout: 1000 });
   return { context, store, messages };
 }
 

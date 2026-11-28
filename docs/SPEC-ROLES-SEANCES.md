@@ -157,11 +157,53 @@ Ne pas construire une nouvelle page de paramétrage complexe. La revue du planni
 6. Exécuter les tests unitaires, Playwright et GitHub Actions ; revue de sécurité multi-athlètes.
 7. Proposer une PR ; aucune fusion ou mise en production sans autorisation explicite.
 
-## 10. Décisions restant à valider avant le code
+## 10. Décisions métier — validées
 
-- Valider les trois rôles minimaux `key / support / easy` et le statut implicite `unclassified` pour les séances anciennes ou libres.
-- Valider que l'attribution automatique est une proposition explicable, corrigible par le coach, et jamais une protection contre les garde-fous de sécurité.
-- Valider le maintien des champs facultatifs dans les objets de plan JSON existants, sans migration Supabase à ce stade.
-- Valider la définition précise des séances clés par format et par phase dans une table de décision, sans inventer de seuils de volume.
+L'utilisateur a validé explicitement les trois choix le 28 novembre 2026 :
 
-**État :** aucune modification du moteur, de `index.html`, de `public/index.html`, de Supabase, de Netlify ou de `main` n'est effectuée par cette spécification.
+- Les rôles minimaux sont `key`, `support`, `easy`, avec `unclassified` par défaut.
+- Le générateur attribue une proposition de rôle ; la correction par le coach est prévue dans une étape d'interface ultérieure. Le rôle ne protège jamais contre les garde-fous de sécurité.
+- Les champs restent facultatifs dans les objets de plan JSON existants ; aucune migration Supabase n'est requise à ce stade.
+
+La définition quantitative et détaillée des séances clés par phase reste volontairement limitée : aucun seuil de volume ou de durée n'a été ajouté.
+
+## 11. Avancement de l'implémentation sur la branche de développement
+
+### Réalisé
+
+- Ajout de `trainingRole` aux séances construites par le catalogue, avec normalisation des valeurs inconnues en `unclassified`.
+- Attribution explicite de rôles selon la structure de la liste de séances, la phase et le format ; aucune attribution fondée uniquement sur le titre ou la durée.
+- En phase spécifique, la séance vélo de durabilité reçoit le rôle `key` pour les listes Ironman ; la séance de qualité vélo reçoit ce rôle pour les listes 70.3. La séance de qualité course reçoit ce rôle en 70.3 lorsque le focus est course.
+- Les footings d'entretien identifiés dans les listes reçoivent `easy`.
+- Les semaines de récupération ne reçoivent pas artificiellement de séance `key`.
+- Les séances libres et les séances construites hors catalogue sont classées `unclassified`.
+- Les fonctions de transformation en séance facile et les alternatives liées aux blessures conservent les métadonnées de rôle.
+- Les anciennes séances sans champ restent compatibles ; elles ne sont pas rétro-classées.
+- La suite GitHub Actions exécute les 18 tests du moteur existant et les nouveaux tests de rôles.
+
+### Tests confirmés
+
+GitHub Actions : [run 46134787404](https://github.com/STEPHANIE59290/coachingtriathlon/actions/runs/46134787404)
+
+- 29 tests réussis.
+- 0 échec, 0 test ignoré.
+- Vérification syntaxique des scripts JavaScript intégrés à `index.html` incluse.
+
+### Non réalisé — à ne pas considérer comme livré
+
+- Le moteur d'adaptation ne tient pas encore compte de `trainingRole` pour choisir les séances à réduire.
+- L'interface ne permet pas encore au coach de modifier le rôle d'une séance.
+- Les rappels courts de l'affûtage ne sont pas encore classés `key`.
+- Les métadonnées de groupe d'enchaînement ne sont pas encore générées ; le helper de copie sait seulement préserver un éventuel `brickGroupId`.
+- Les tests Playwright, l'intégration complète, la synchronisation multi-appareils et la revue d'isolation entre athlètes restent à faire.
+- `public/index.html`, Supabase, Netlify, `main` et la production n'ont pas été modifiés.
+
+## 12. Prochaines étapes contrôlées
+
+1. Compléter et valider la table de décision des rôles pour toutes les phases et tous les focus, notamment l'affûtage et les semaines de récupération.
+2. Ajouter la possibilité pour le coach de corriger les rôles dans la revue du planning.
+3. Étendre les tests de génération et de persistance des plans.
+4. Seulement ensuite, faire évoluer le moteur pour utiliser les rôles, avec tests de non-régression et garde-fous inchangés.
+5. Exécuter Playwright et les contrôles multi-athlètes ; proposer une PR vers `main` sans fusion ni mise en production sans autorisation explicite.
+
+**Périmètre actuel :** seuls `index.html`, les tests et la documentation de la branche `dev/tests-moteur-adaptation` ont été modifiés. Le moteur de décision d'adaptation, `public/index.html`, Supabase, Netlify, `main` et la production restent inchangés.

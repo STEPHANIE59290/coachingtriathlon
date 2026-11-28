@@ -25,7 +25,7 @@ else{document.write('<script src="config.js"><\/script>');window.addEventListene
 :root{--navy:#102a43;--blue:#176b87;--cyan:#d9f0f4;--bg:#f3f6f8;--card:#fff;--ink:#172b3a;--muted:#607483;--line:#dce5ea;--green:#247a57;--orange:#b96b16}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.45}
 header{background:linear-gradient(135deg,#102a43,#176b87);color:white;padding:calc(22px + env(safe-area-inset-top,0px)) 18px 18px;border-radius:0 0 22px 22px}
-header .top{display:flex;justify-content:space-between;align-items:center;gap:12px}h1{font-size:23px;margin:0}header p{margin:7px 0 0;color:#d8e9ef;font-size:13px}
+header .top{display:flex;justify-content:space-between;align-items:center;gap:12px;padding-left:56px}h1{font-size:23px;margin:0}header p{margin:7px 0 0;color:#d8e9ef;font-size:13px}
 .version{font-size:12px;background:#ffffff20;padding:5px 9px;border-radius:20px}
 nav{display:none}
  .menuWrap{position:absolute;left:14px;top:calc(env(safe-area-inset-top,0px) + 12px);z-index:5;display:flex;align-items:center}
@@ -97,7 +97,7 @@ details.icu{border:1px solid var(--line);border-radius:12px;padding:9px 11px;mar
 <div class="menuWrap"><button class="menuBtn" onclick="toggleMenu()" aria-expanded="false" id="menuBtn" aria-label="Ouvrir le menu">☰</button></div>
 <div class="drawerShade" id="drawerShade" onclick="closeMenu()"></div>
 <aside class="sideDrawer" id="menuDrop" aria-hidden="true"><div class="drawerHead"><div class="drawerBrand">Mon Coach Triathlon</div><button class="drawerClose" onclick="closeMenu()" aria-label="Fermer">×</button></div><div class="drawerItems">
-<button class="drawerItem" data-panel="home" onclick="navigateMenu('home')"><span class="drawerIcon">⌂</span><span>Aujourd'hui</span></button><button class="drawerItem" onclick="drawerPlaceholder('Demandes Watson')"><span class="drawerIcon">♧</span><span>Demandes Watson</span></button><button class="drawerItem" data-panel="sessions" onclick="navigateMenu('sessions')"><span class="drawerIcon">∿</span><span>Activités</span></button><button class="drawerItem" data-panel="week" onclick="navigateMenu('week','availCard')"><span class="drawerIcon">▣</span><span>Disponibilités</span></button><button class="drawerItem" data-panel="fitness" onclick="navigateMenu('fitness')"><span class="drawerIcon">♡</span><span>Body</span></button><button class="drawerItem" data-panel="profile" onclick="navigateMenu('profile','seasonCard')"><span class="drawerIcon">◎</span><span>Saison</span></button><button class="drawerItem" data-panel="profile" onclick="navigateMenu('profile','profCard')"><span class="drawerIcon">♙</span><span>Moi</span></button><button class="drawerItem" onclick="drawerPlaceholder('Communauté')"><span class="drawerIcon">◯</span><span>Communauté</span></button><button class="drawerItem" data-panel="home" onclick="navigateMenu('home','wellCard')"><span class="drawerIcon drawerHeart">♡</span><span>Bien-être</span></button><button class="drawerItem" data-panel="profile" onclick="navigateMenu('profile','testCard')"><span class="drawerIcon">◴</span><span>Tests de seuil</span></button><button class="drawerItem" data-panel="log" onclick="navigateMenu('log')"><span class="drawerIcon">▤</span><span>Suivi</span></button></div></aside><main>
+<button class="drawerItem" data-panel="home" onclick="navigateMenu('home')"><span class="drawerIcon">⌂</span><span>Aujourd'hui</span></button><button class="drawerItem" data-panel="sessions" onclick="navigateMenu('sessions')"><span class="drawerIcon">∿</span><span>Activités</span></button><button class="drawerItem" data-panel="week" onclick="navigateMenu('week','availCard')"><span class="drawerIcon">▣</span><span>Disponibilités</span></button><button class="drawerItem" data-panel="fitness" onclick="navigateMenu('fitness')"><span class="drawerIcon">♡</span><span>Body</span></button><button class="drawerItem" data-panel="profile" onclick="navigateMenu('profile','seasonCard')"><span class="drawerIcon">◎</span><span>Saison</span></button><button class="drawerItem" data-panel="profile" onclick="navigateMenu('profile','profCard')"><span class="drawerIcon">♙</span><span>Moi</span></button><button class="drawerItem" data-panel="home" onclick="navigateMenu('home','wellCard')"><span class="drawerIcon drawerHeart">♡</span><span>Bien-être</span></button><button class="drawerItem" data-panel="profile" onclick="navigateMenu('profile','testCard')"><span class="drawerIcon">◴</span><span>Tests de seuil</span></button><button class="drawerItem" data-panel="log" onclick="navigateMenu('log')"><span class="drawerIcon">▤</span><span>Suivi</span></button><button class="drawerItem" data-panel="course" onclick="navigateMenu('course')"><span class="drawerIcon">🏁</span><span>Course</span></button></div></aside><main>
 <section id="home" class="panel active">
 <div class="homeHero card"><div class="heroRow"><div><div class="heroKicker">TABLEAU DE BORD</div><h2 id="dashGreeting">Ton entraînement</h2><p id="dashDate" class="muted"></p></div><div class="heroMark">🏊 🚴 🏃</div></div><p class="heroMessage">Priorité du jour : régularité, qualité de récupération et séance adaptée à tes sensations.</p></div>
 <div class="card" id="bilanCard"><h2>Bilan du jour</h2><div class="grid">
@@ -119,8 +119,8 @@ details.icu{border:1px solid var(--line);border-radius:12px;padding:9px 11px;mar
 <div id="skills"></div>
 <div id="milestones"></div>
 <div id="drills"></div>
-<div class="card fold closed" id="prevCard"><h2 class="fh">Prévention (10 min)</h2><div id="prevBox"></div></div>
-<div class="card fold closed" id="gearCard"><h2 class="fh">Matériel</h2><div id="gearBox"></div></div>
+
+
 <div class="card fold closed" id="wxCard"><h2 class="fh">Météo et conseils</h2><div id="wxBox"></div></div>
 <div class="card" id="todoCard" style="display:none"><h2>À faire</h2><div id="todoBox"></div></div>
 <div id="injBanner"></div>
@@ -133,14 +133,17 @@ details.icu{border:1px solid var(--line);border-radius:12px;padding:9px 11px;mar
 <div class="card" id="coachCard"><h2>Consigne du coach</h2><div id="coachShow"></div><div class="actions"><button class="primary" id="coachPasteBtn" onclick="pasteCoach()">Coller la réponse de Claude</button></div><div id="coachMsg" class="hint">Copie la réponse de Claude puis reviens ici : elle se colle toute seule si tu as copié le dossier depuis l’app. Sinon, touche le bouton (sur iPhone, confirme « Coller »).</div><details class="icu" id="coachManual"><summary><strong>Écrire ou modifier à la main</strong></summary><textarea id="coachNote" rows="5" maxlength="2000" placeholder="Colle ici la réponse de Claude après une analyse"></textarea><div class="actions"><button class="primary" onclick="saveCoach()">Enregistrer</button><button class="secondary" onclick="clearCoach()">Effacer</button></div></details></div>
 <div class="card fold closed" id="pathCard" style="display:none"><h2 class="fh">Ton chemin vers la cible</h2><div id="pathBox"></div></div>
 <div id="backupBox"></div>
-<div class="card fold closed"><h2 class="fh">Bonjour !</h2><p class="muted">Ton planning hebdomadaire est construit à partir de tes disponibilités. Enregistre une semaine type : elle se recharge chaque nouvelle semaine, tu ne modifies que les exceptions.</p>
-<div class="grid"><div class="stat"><strong id="weekHours">0 h</strong><span>Réalisé cette semaine</span></div><div class="stat"><strong id="plannedHours">0 h</strong><span>Entraînement planifié</span></div></div>
-<div class="actions"><button class="primary" onclick="showTab('week')">Organiser ma semaine</button></div></div>
+</div>
+</div>
+</div>
+<div class="card fold closed" id="wellCard"><h2 class="fh">Récupération (Garmin via intervals.icu)</h2><div id="wellBox"></div></div>
+<div class="warn">Le planning proposé est une base de travail à valider selon tes sensations. En cas de douleur persistante, maladie ou fatigue inhabituelle, privilégie le repos et demande un avis médical si nécessaire.</div>
+</section>
+
+<section id="course" class="panel">
 <div class="card fold closed" id="raceCard"><h2 class="fh">Plan jusqu’à la course</h2><div id="raceBox"></div></div>
 <div class="card fold closed" id="forecastCard"><h2 class="fh">Prévision et fiche de course</h2><div id="forecastBox"></div></div>
 <div class="card fold closed" id="raceFileCard"><h2 class="fh">Dossier de course</h2><div id="raceFileBox"></div></div>
-<div class="card fold closed" id="wellCard"><h2 class="fh">Récupération (Garmin via intervals.icu)</h2><div id="wellBox"></div></div>
-<div class="warn">Le planning proposé est une base de travail à valider selon tes sensations. En cas de douleur persistante, maladie ou fatigue inhabituelle, privilégie le repos et demande un avis médical si nécessaire.</div>
 </section>
 
 <section id="week" class="panel">
@@ -202,6 +205,7 @@ details.icu{border:1px solid var(--line);border-radius:12px;padding:9px 11px;mar
 </section>
 
 <section id="profile" class="panel">
+<div class="card fold closed" id="gearCard"><h2 class="fh">Matériel</h2><div id="gearBox"></div></div>
 <div class="card fold closed" id="profCard"><h2 class="fh">Mon profil sportif</h2><div class="grid">
 <div><label for="ftp">FTP vélo extérieur (W)</label><input id="ftp" type="number" min="50" max="500" value="180"></div>
 <div><label for="ftpIn">FTP vélo d’intérieur (W)</label><input id="ftpIn" type="number" min="50" max="500" placeholder="ex. 170"><p class="hint">Seuil sur home trainer, souvent plus bas. Vide : la FTP extérieure sert partout.</p></div>
@@ -264,6 +268,7 @@ details.icu{border:1px solid var(--line);border-radius:12px;padding:9px 11px;mar
 <div id="xStatus" class="hint"></div></div></details></div>
 </section>
 <section id="fitness" class="panel">
+<div class="card fold closed" id="prevCard"><h2 class="fh">Prévention (10 min)</h2><div id="prevBox"></div></div>
 <div class="card"><h2>Condition physique</h2>
 <div id="fitKpi"></div>
 <label for="fitRange">Période affichée</label><select id="fitRange" onchange="put('fitRange',this.value);renderFitness()"><option value="60">60 derniers jours + à venir</option><option value="180">6 mois + à venir</option><option value="365">Toute la saison + à venir</option></select>
@@ -566,7 +571,7 @@ function syncFromSlots(){
 }
 const bricksFromSlots=()=>slots.map(a=>a.some(sl=>sl.chain&&sl.sports.includes('Vélo')&&sl.sports.includes('Course')));
 syncFromSlots();
-function showTab(id){document.querySelectorAll('.panel').forEach(x=>x.classList.toggle('active',x.id===id));window.scrollTo({top:0,behavior:'smooth'});if(id==='profile'||id==='sessions')renderZones();if(id==='profile'){renderProg();renderTests();renderTrends();renderSeason();renderHours();renderRaceVolume();}if(id==='home'){renderTodo();renderCoach();renderRace();renderWell();renderToday();renderBackup();}if(id==='fitness'){renderFitness();renderRdLog();}}
+function showTab(id){document.querySelectorAll('.panel').forEach(x=>x.classList.toggle('active',x.id===id));window.scrollTo({top:0,behavior:'smooth'});if(id==='profile'||id==='sessions')renderZones();if(id==='profile'){renderProg();renderTests();renderTrends();renderSeason();renderHours();renderRaceVolume();}if(id==='home'){renderTodo();renderCoach();renderRace();renderWell();renderToday();renderBackup();}if(id==='course'){renderRace();}if(id==='fitness'){renderFitness();renderRdLog();}}
 function toggleMenu(){const d=document.getElementById('menuDrop'),shade=document.getElementById('drawerShade'),b=document.getElementById('menuBtn');const open=!d.classList.contains('open');d.classList.toggle('open',open);shade.classList.toggle('open',open);document.body.classList.toggle('menuOpen',open);d.setAttribute('aria-hidden',String(!open));b.setAttribute('aria-expanded',String(open));}
 function closeMenu(){const d=document.getElementById('menuDrop'),shade=document.getElementById('drawerShade'),b=document.getElementById('menuBtn');d.classList.remove('open');shade.classList.remove('open');document.body.classList.remove('menuOpen');d.setAttribute('aria-hidden','true');b.setAttribute('aria-expanded','false');}
 function navigateMenu(panel,target){showTab(panel);closeMenu();document.querySelectorAll('.drawerItem').forEach(x=>x.classList.toggle('active',x.dataset.panel===panel));if(target){setTimeout(()=>{const e=document.getElementById(target);if(e){e.classList.remove('closed');e.scrollIntoView({behavior:'smooth',block:'start'});}},100);}}

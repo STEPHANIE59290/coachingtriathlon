@@ -192,7 +192,7 @@ GitHub Actions : [run 46134787404](https://github.com/STEPHANIE59290/coachingtri
 ### Non réalisé — à ne pas considérer comme livré
 
 - Le moteur d'adaptation ne tient pas encore compte de `trainingRole` pour choisir les séances à réduire.
-- L'interface ne permet pas encore au coach de modifier le rôle d'une séance.
+- L'interface ne permet pas encore de corriger le rôle. L'audit du code ne trouve pas de distinction d'autorisation entre coach et athlète : il ne faut donc pas afficher une commande de correction présentée comme « réservée au coach » tant que cette permission n'existe pas.
 - Les rappels courts de l'affûtage ne sont pas encore classés `key`.
 - Les métadonnées de groupe d'enchaînement ne sont pas encore générées ; le helper de copie sait seulement préserver un éventuel `brickGroupId`.
 - Les tests Playwright, l'intégration complète, la synchronisation multi-appareils et la revue d'isolation entre athlètes restent à faire.
@@ -201,7 +201,7 @@ GitHub Actions : [run 46134787404](https://github.com/STEPHANIE59290/coachingtri
 ## 12. Prochaines étapes contrôlées
 
 1. Compléter et valider la table de décision des rôles pour toutes les phases et tous les focus, notamment l'affûtage et les semaines de récupération.
-2. Ajouter la possibilité pour le coach de corriger les rôles dans la revue du planning.
+2. Définir qui peut corriger un rôle : tous les athlètes sur leur propre plan, ou un coach avec une permission dédiée. L'application actuelle ne possède pas de rôle coach explicite ; ne pas exposer une commande coach à tous les comptes par défaut.
 3. Étendre les tests de génération et de persistance des plans.
 4. Seulement ensuite, faire évoluer le moteur pour utiliser les rôles, avec tests de non-régression et garde-fous inchangés.
 5. Exécuter Playwright et les contrôles multi-athlètes ; proposer une PR vers `main` sans fusion ni mise en production sans autorisation explicite.

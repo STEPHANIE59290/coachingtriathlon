@@ -177,13 +177,14 @@ La définition quantitative et détaillée des séances clés par phase reste vo
 - Les footings d'entretien identifiés dans les listes reçoivent `easy`.
 - Les semaines de récupération ne reçoivent pas artificiellement de séance `key`.
 - Les séances libres et les séances construites hors catalogue sont classées `unclassified`.
-- Les fonctions de transformation en séance facile et les alternatives liées aux blessures conservent les métadonnées de rôle.
+- Une transformation `easyLike()` reclasse la séance transformée en `easy` et conserve son `brickGroupId` ; l'instantané `orig` garde le rôle initial pour l'annulation.
+- Les deux jambes d'un enchaînement généré partagent désormais un `brickGroupId` stable à l'échelle de la semaine ; la jambe course est `support` pour un enchaînement soutenu et `easy` pour une transition facile.
 - Les anciennes séances sans champ restent compatibles ; elles ne sont pas rétro-classées.
 - La suite GitHub Actions exécute les 18 tests du moteur existant et les nouveaux tests de rôles.
 
 ### Tests confirmés
 
-GitHub Actions : [run 46134787404](https://github.com/STEPHANIE59290/coachingtriathlon/actions/runs/46134787404)
+GitHub Actions : [run 46135055043](https://github.com/STEPHANIE59290/coachingtriathlon/actions/runs/46135055043)
 
 - 29 tests réussis.
 - 0 échec, 0 test ignoré.
@@ -194,7 +195,8 @@ GitHub Actions : [run 46134787404](https://github.com/STEPHANIE59290/coachingtri
 - Le moteur d'adaptation ne tient pas encore compte de `trainingRole` pour choisir les séances à réduire.
 - L'interface ne permet pas encore de corriger le rôle. L'audit du code ne trouve pas de distinction d'autorisation entre coach et athlète : il ne faut donc pas afficher une commande de correction présentée comme « réservée au coach » tant que cette permission n'existe pas.
 - Les rappels courts de l'affûtage ne sont pas encore classés `key`.
-- Les métadonnées de groupe d'enchaînement ne sont pas encore générées ; le helper de copie sait seulement préserver un éventuel `brickGroupId`.
+- Le moteur ne signale pas encore explicitement un enchaînement devenu incomplet si une seule jambe est modifiée ou retirée.
+- Les rappels courts de l'affûtage ne sont pas encore classés `key` : cette attribution demande une règle métier plus précise pour éviter de multiplier les séances prioritaires.
 - Les tests Playwright, l'intégration complète, la synchronisation multi-appareils et la revue d'isolation entre athlètes restent à faire.
 - `public/index.html`, Supabase, Netlify, `main` et la production n'ont pas été modifiés.
 

@@ -52,7 +52,7 @@ function session(sport, attrs = {}) {
   return { date: dateOffset(-1), sport, duration: 60, ...attrs };
 }
 function futurePlan(sport, attrs = {}) {
-  return { date: dateOffset(2), day: 2, sport, min: 90, title: sport + ' qualité', quality: true, long: false, ...attrs };
+  return { date: dateOffset(2), day: 2, sport, min: 90, title: sport + ' qualité', quality: true, long: false, trainingRole: 'support', ...attrs };
 }
 
 test('semaine normale : aucun signal et plan inchangé', () => {
@@ -165,6 +165,7 @@ function weekPlan(count = 10, minutes = 60) {
     quality: false,
     long: false,
     title: 'Séance facile',
+    trainingRole: 'easy',
     id: i,
   }));
 }

@@ -582,10 +582,23 @@ function navigateMenu(panel,target){showTab(panel);closeMenu();document.querySel
 function drawerPlaceholder(name){closeMenu();notify(name+' : cette rubrique sera activée dans une prochaine version.')}
 
 // ---- Retour en un tap après la séance ----
+function plannedSessionForWorkout(w){if(!w||!plan.length||!get('planStart',''))return null;const matches=matchDone(),i=matches.findIndex(x=>x&&((w.ext&&x.ext===w.ext)||(x.date===w.date&&planSport(x.sport)===planSport(w.sport))));return i>=0?plan[i]:null;}
+function postSessionCoachInsight(w,planned){
+ const p=+(w&&((w.postSession&&w.postSession.pain)??w.pain??0)),r=+(w&&((w.postSession&&w.postSession.rpe)||w.rpe)||0),feel=+(w&&((w.postSession&&w.postSession.feel)||w.feel)||0),fuel=w&&w.postSession&&w.postSession.fuel;
+ let title='Séance enregistrée',message='Retour enregistré. Le moteur le conserve pour contextualiser les prochaines recommandations.';
+ if(p>=4){title='Douleur à surveiller';message='Douleur déclarée à '+p+'/10 : ne cherche pas à compenser la séance. Évite de solliciter la zone douloureuse et demande un avis professionnel si la douleur est importante, inhabituelle, persiste ou s’aggrave.';}
+ else if(p>=3){title='Gêne à surveiller';message='Gêne déclarée à '+p+'/10 : observe son évolution et sa réaction dans les 24 heures. Ne force pas si elle augmente.';}
+ else if(r>=9||(r>=8&&feel>=4)){title='Effort nettement supérieur aux attentes';message='RPE '+r+'/10'+(feel?' et fatigue de fin de séance '+feel+'/5':'')+' : garde une marge de récupération avant la prochaine séance exigeante.';}
+ else if(r>=8){title='Effort élevé';message='RPE '+r+'/10 : vérifie que la prochaine séance facile reste réellement facile.';}
+ else if(r<=4&&feel>0&&feel<=2){title='Séance bien tolérée';message='Effort modéré et bonnes sensations : signal favorable, sans raison d’ajouter du volume automatiquement.';}
+ if(planned){const target=+planned.min||0,actual=+(w.duration||0);if(target>0&&actual<target*.8)message+=' Durée inférieure de plus de 20 % au prévu : ne rattrape pas automatiquement les minutes manquantes.';else if(target>0&&actual>target*1.2)message+=' Durée supérieure de plus de 20 % au prévu : tiens-en compte dans la récupération.';else if(target>0)message+=' Durée proche de celle planifiée.';if(planned.trainingRole==='key')message+=' Séance prioritaire : évalue surtout sa qualité et sa tolérance, pas seulement sa durée.';}
+ if(fuel==='peu')message+=' Les apports ont été déclarés insuffisants : revois la stratégie de ravitaillement sur une prochaine séance comparable.';if(fuel==='dig')message+=' Un inconfort digestif a été signalé : ajuste progressivement les apports et note les produits concernés.';
+ return {title,message};
+}
 function renderQuickFeel(){const el=$('quickFeel');if(!el)return;
  const lim=iso(new Date(Date.now()-7*864e5)),F=get('feel',{});
  const i=workouts.findIndex(w=>w.date&&w.date>=lim&&!(w.postSession&&w.postSession.completedAt));
- if(i<0){el.innerHTML='';return;}
+ if(i<0){const last=workouts.find(w=>w.postSession&&w.postSession.completedAt);if(!last){el.innerHTML='';return;}const q=postSessionCoachInsight(last,plannedSessionForWorkout(last));el.innerHTML='<div class="card"><h2>Dernier retour analysé</h2><p class="hint" style="margin:0 0 5px">'+esc(last.sport)+' · '+esc(last.date)+' · '+esc(last.duration||0)+' min</p><strong>'+esc(q.title)+'</strong><p style="margin:6px 0 0">'+esc(q.message)+'</p><p class="hint">Lecture indicative ; aucune modification automatique du planning.</p></div>';return;}
  const w=workouts[i],f=(w.ext&&F[w.ext])||w.postSession||{};
  const opts=(a,b,v)=>Array.from({length:b-a+1},(_,n)=>a+n).map(n=>`<option value="${n}"${String(v??'')===String(n)?' selected':''}>${n}</option>`).join('');
  el.innerHTML=`<div class="card" id="postSessionCard"><h2>Bilan post-séance</h2><p class="hint" style="margin-top:0">${esc(w.sport)}${w.duration?' · '+esc(w.duration)+' min':''} · ${esc(w.date)}. Ce retour permet au coach de mieux ajuster les prochaines séances.</p>

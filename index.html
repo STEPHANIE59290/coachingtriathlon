@@ -1951,21 +1951,37 @@ function adaptiveWeekSignal(){
  if(level==='green'&&!rated.length&&!rows.some(x=>x.pain>0)&&!Object.keys(RL).some(k=>k>=from&&k<=to))why.push('peu de retours de récupération : analyse prudente, données insuffisantes');
  return {level,why,rows,sports,response,localTargets,redDays,amberDays,painMax,painDays,hardCount,avgRpe,planned,completed,adherence,plannedMin,doneMin,ratio,from,to};
 }
+function adaptiveRoleOf(session){
+ const role=String(session&&session.trainingRole||'').toLowerCase();
+ return ['key','support','easy'].includes(role)?role:'unclassified';
+}
 function applyAdaptiveWeek(){
  const st=adaptiveWeekSignal();if(st.painMax>=4){toast('Douleur ≥ 4/10 : pas d’adaptation automatique. Évalue la douleur et demande un avis médical si elle est importante ou persistante.');return;}
  const global=['red','amber'].includes(st.level),targets=global?null:st.localTargets.map(x=>x.name);
  if(!global&&!targets.length){toast('Aucun signal de fatigue par discipline ou global ne justifie un allègement. Ne cherche pas à rattraper les séances manquées.');return;}
- const today=iso(new Date()),end=new Date();end.setDate(end.getDate()+7);const endISO=iso(end),dm=matchDone();let n=0;
+ const today=iso(new Date()),end=new Date();end.setDate(end.getDate()+7);const endISO=iso(end),dm=matchDone(),candidates=[];
  plan.forEach((x,i)=>{
-  const d=planDayISO(x.day);if(d<today||d>endISO||x.event||x.opener||dm[i]||x.adaptive7d||x.adapted&&x.orig)return;
+  if(!x)return;const d=planDayISO(x.day);if(d<today||d>endISO||x.event||x.opener||dm[i]||x.adaptive7d||x.adapted&&x.orig)return;
   if(targets&&!targets.includes(adaptiveSportKey(x.sport)))return;
-  const hard=!!(x.quality||x.long||x.min>60);if(!hard||x.sport==='Renforcement'&&x.title==='Mobilité et gainage léger')return;
+  const role=adaptiveRoleOf(x);if(role!=='support'&&role!=='key')return;
+  if(x.sport==='Renforcement'&&x.title==='Mobilité et gainage léger')return;
+  candidates.push({x,i,role});
+ });
+ const supports=candidates.filter(c=>c.role==='support');
+ // Les séances clés ne sont envisagées qu'en signal rouge, si aucune séance
+ // de soutien admissible ne reste. Les séances non classées ne sont jamais devinées.
+ const selected=supports.length?supports:(st.level==='red'?candidates.filter(c=>c.role==='key'):[]);
+ if(!selected.length){
+  toast('Aucune séance de soutien admissible à alléger. Les séances clés, faciles et non classées sont conservées ; vérifie le planning avec le coach.');
+  return;
+ }
+ let n=0;
+ selected.forEach(({x,i})=>{
   const local=targets?st.sports[adaptiveSportKey(x.sport)]:null,factor=global?(st.level==='red'?.55:.7):(local&&local.level==='blocked'?.55:.7);
   const min=Math.max(25,Math.round((x.min||40)*factor/5)*5),q=easyLike(x,min),orig=Object.assign({},x);delete orig.orig;
   plan[i]=Object.assign({},q,{day:x.day,adapted:true,adaptive7d:true,orig,indoor:x.sport==='Vélo'?!!x.indoor:undefined});n++;
  });
- if(!n){toast(targets?`Aucune séance longue ou intense à adapter dans les disciplines concernées (${targets.join(', ')}).`:'Aucune séance future longue ou intense à adapter dans les 7 prochains jours.');return;}
- put('plan',plan);put('adaptiveWeekApplied',{date:today,count:n,level:st.level,targets:targets||'global',why:st.why});renderPlan();refreshStats();renderToday();toast(`${n} séance(s) allégée(s)${targets?' dans '+targets.join(', '):''}. Tu peux annuler chaque adaptation depuis la séance.`);
+ put('plan',plan);put('adaptiveWeekApplied',{date:today,count:n,level:st.level,targets:targets||'global',why:st.why,roles:selected.map(c=>c.role)});renderPlan();refreshStats();renderToday();toast(`${n} séance(s) de soutien allégée(s)${targets?' dans '+targets.join(', '):''}. Les séances clés restent prioritaires. Tu peux annuler chaque adaptation depuis la séance.`);
 }
 function undoAdaptiveWeek(){let n=0;plan.forEach((x,i)=>{if(x&&x.adaptive7d&&x.orig){plan[i]=Object.assign({},x.orig,{day:x.day});n++;}});if(!n){toast('Aucune adaptation hebdomadaire à annuler.');return;}put('plan',plan);put('adaptiveWeekApplied',null);renderPlan();refreshStats();renderToday();toast(`${n} séance(s) restaurée(s).`);}
 // Prévision de charge sur les 7 prochains jours : indicateurs de vigilance, jamais un diagnostic.

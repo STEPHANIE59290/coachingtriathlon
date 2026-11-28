@@ -1892,8 +1892,8 @@ function readinessAvailabilityScore(data){
  score=Math.max(0,Math.min(100,Math.round(score)));return {score,factors,band:score>=80?'bonne':score>=60?'modérée':score>=40?'faible':'très faible'};
 }
 function currentReadinessAvailability(){
- const week=adaptiveWeekSignal(),prev=previousGlobalSessionSignal();
- return readinessAvailabilityScore({sleep:$('sleep')?$('sleep').value:'',fatigue:$('fatigue')?$('fatigue').value:'',feeling:$('feeling')?$('feeling').value:'',life:$('lifeLoad')?$('lifeLoad').value:'',painMax:week.painMax||0,recentLevel:prev&&prev.level});
+ const week=adaptiveWeekSignal(),prev=previousGlobalSessionSignal(),since=iso(new Date(Date.now()-7*864e5)),loggedPain=get('painLog',[]).filter(x=>x&&x.d>=since).reduce((m,x)=>Math.max(m,+x.pain||0),0),painMax=Math.max(week.painMax||0,loggedPain);
+ return readinessAvailabilityScore({sleep:$('sleep')?$('sleep').value:'',fatigue:$('fatigue')?$('fatigue').value:'',feeling:$('feeling')?$('feeling').value:'',life:$('lifeLoad')?$('lifeLoad').value:'',painMax,recentLevel:prev&&prev.level});
 }
 function renderReadinessAvailability(){
  const el=$('readiness');if(!el)return;const s=currentReadinessAvailability(),why=s.factors.length?s.factors.join(' · '):'aucun facteur défavorable renseigné';
@@ -2425,7 +2425,7 @@ function renderWkBilan(){
  el.innerHTML=`<p style="margin:0 0 8px"><strong>${pct===null?'Suivi en cours':pct+' % du volume prévu à date'}</strong> · ${f(D)} réalisés sur ${f(P)} prévus jusqu’à aujourd’hui${rpeAvg?` · RPE moyen ${rpeAvg}/10`:''}</p>${rows}<p class="hint">${advice}${future?` Il reste ${f(future)} planifiés après aujourd’hui.`:''}</p><p class="hint">La charge en points n’est affichée que lorsqu’elle est fournie par la source d’activité : aucune valeur manquante n’est inventée.</p>`;
  card.style.display='';
 }
-function renderToday(){renderToday0();try{renderCoach48h();}catch(e){}try{renderReview();}catch(e){}try{renderNutri();}catch(e){}try{renderGear();}catch(e){}}
+function renderToday(){renderToday0();try{renderReadinessAvailability();}catch(e){}try{renderCoach48h();}catch(e){}try{renderReview();}catch(e){}try{renderNutri();}catch(e){}try{renderGear();}catch(e){}}
 function renderToday0(){
  try{renderRpeBox();}catch(e){}
  try{renderInjBanner();}catch(e){}

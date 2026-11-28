@@ -1,7 +1,7 @@
 # Spécification technique — rôles explicites des séances
 
 - Branche : `dev/tests-moteur-adaptation`
-- Statut : proposition technique à valider avant implémentation.
+- Statut : implémentation progressive sur la branche de développement.
 - Référence métier : `docs/MATRICE-METIER-IRONMAN-HALF.md` et `docs/SCENARIOS-TESTS-IRONMAN-HALF.md`.
 - Périmètre : métadonnées des séances du planning et règles futures de sélection/adaptation.
 - Aucun code applicatif, schéma Supabase, donnée d'athlète ou environnement de production n'est modifié par ce document.
@@ -111,7 +111,7 @@ Afficher un libellé discret :
 - Facile
 - À qualifier
 
-Le coach doit pouvoir modifier le rôle d'une séance non réalisée. Les séances réalisées, événements et openers doivent conserver leurs protections existantes. L'athlète doit comprendre pourquoi une séance est proposée à l'allègement, sans avoir à gérer les règles du moteur.
+L'athlète peut corriger le rôle d'une séance non réalisée dans son propre planning. Les séances réalisées, événements et openers ne proposent pas de commande de modification. La correction est enregistrée dans le plan JSON de son compte ; aucune permission coach ni migration Supabase n'est nécessaire. L'athlète comprend pourquoi une séance est proposée à l'allègement, sans avoir à gérer les règles du moteur.
 
 Ne pas construire une nouvelle page de paramétrage complexe. La revue du planning existant est le point d'entrée naturel.
 
@@ -195,7 +195,7 @@ GitHub Actions : [run 46135479772](https://github.com/STEPHANIE59290/coachingtri
 - Le moteur hebdomadaire utilise `trainingRole` : les séances `support` sont sélectionnées en premier ; les séances `key` ne sont considérées qu'en signal global rouge et en l'absence de séance `support` admissible. Les séances `easy` et `unclassified` ne sont jamais sélectionnées automatiquement.
 - Les propositions quotidiennes suivent la même logique : en orange, seule une séance `support` est proposée à l'allègement ; en rouge, une séance `key` peut aussi être allégée. Les contraintes de temps disponible restent indépendantes du rôle.
 - Les garde-fous douleur ≥ 4/10, séances réalisées, événements et openers restent prioritaires.
-- L'interface ne permet pas encore de corriger le rôle. L'audit du code ne trouve pas de distinction d'autorisation entre coach et athlète : il ne faut donc pas afficher une commande de correction présentée comme « réservée au coach » tant que cette permission n'existe pas.
+- L'interface du planning permet à chaque athlète de corriger le rôle de ses séances futures non réalisées (`Clé`, `Soutien`, `Facile`, `À classer`). La correction est enregistrée dans son propre `app_state` ; les politiques RLS existantes limitent les accès à sa propre ligne. Aucun rôle coach n'est introduit.
 - Les rappels courts de l'affûtage ne sont pas encore classés `key`.
 - Le moteur ne signale pas encore explicitement un enchaînement devenu incomplet si une seule jambe est modifiée ou retirée.
 - Les rappels courts de l'affûtage ne sont pas encore classés `key` : cette attribution demande une règle métier plus précise pour éviter de multiplier les séances prioritaires.
@@ -205,9 +205,9 @@ GitHub Actions : [run 46135479772](https://github.com/STEPHANIE59290/coachingtri
 ## 12. Prochaines étapes contrôlées
 
 1. Compléter et valider la table de décision des rôles pour toutes les phases et tous les focus, notamment l'affûtage et les semaines de récupération.
-2. Définir qui peut corriger un rôle : tous les athlètes sur leur propre plan, ou un coach avec une permission dédiée. L'application actuelle ne possède pas de rôle coach explicite ; ne pas exposer une commande coach à tous les comptes par défaut.
-3. Étendre les tests de génération et de persistance des plans.
-4. Le moteur utilise maintenant les rôles pour les adaptations quotidiennes et hebdomadaires ; poursuivre avec l'interface de correction et les tests d'intégration.
-5. Exécuter Playwright et les contrôles multi-athlètes ; proposer une PR vers `main` sans fusion ni mise en production sans autorisation explicite.
+2. Étendre les tests de génération, correction manuelle, restauration et persistance des plans.
+3. Vérifier visuellement l'interface sur mobile et desktop, puis exécuter les tests d'intégration.
+4. Vérifier l'isolation multi-athlètes avec deux comptes de test distincts.
+5. Proposer une PR vers `main` sans fusion ni mise en production sans autorisation explicite.
 
 **Périmètre actuel :** `index.html`, les tests et la documentation de la branche `dev/tests-moteur-adaptation` ont été modifiés. `public/index.html`, Supabase, Netlify, `main` et la production restent inchangés.

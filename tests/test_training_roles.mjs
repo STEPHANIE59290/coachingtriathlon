@@ -121,3 +121,12 @@ test('easyLike normalise un ancien rôle absent sans le promouvoir', () => {
   const adapted = easyLike({ sport: 'Course', title: 'Ancien plan' }, 45);
   assert.equal(adapted.trainingRole, 'unclassified');
 });
+
+test('les scripts JavaScript intégrés à index.html sont syntaxiquement valides', () => {
+  const scripts = Array.from(html.matchAll(/<script\\b([^>]*)>([\\s\\S]*?)<\\/script>/gi))
+    .filter(([, attrs, body]) => !/\\bsrc\\s*=/.test(attrs) && (!/\\btype\\s*=\\s*["']([^"']+)["']/i.test(attrs) || /type\\s*=\\s*["'](?:text|application)\\/(?:java|ecma)script["']/i.test(attrs) || /type\\s*=\\s*["']module["']/i.test(attrs)))
+    .map(([, , body]) => body)
+    .filter(body => body.trim());
+  assert.ok(scripts.length > 0, 'Aucun script JavaScript intégré détecté');
+  scripts.forEach((source, index) => new vm.Script(source, { filename: `index.html:inline-script-${index + 1}` }));
+});

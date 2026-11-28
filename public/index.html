@@ -1759,7 +1759,8 @@ function renderPlan(){try{syncSpecialWeek();}catch(e){}
  const stale=ps&&ps<iso(mondayOf())?`<div class="warn" style="margin-bottom:10px">Ce planning date de la semaine du ${esc(mondayOf(ps).toLocaleDateString('fr-FR',{day:'numeric',month:'long'}))}. Génère-en un nouveau pour la semaine en cours.</div>`:'';
  const notes=get('planNotes',[]);
  let notesHtml=Array.isArray(notes)&&notes.length?`<div class="warn" style="margin-bottom:10px">${notes.map(esc).join('<br>')}</div>`:'';
- notesHtml+=unplacedHtml();\n const brickIssues=brickIntegrityIssues(plan);if(brickIssues.length)notesHtml+=`<div class=\"warn\" style=\"margin-bottom:10px\"><strong>Enchaînement(s) à vérifier :</strong> ${brickIssues.map(q=>esc(q.message)).join('<br>')}</div>`;
+ notesHtml+=unplacedHtml();
+ const brickIssues=brickIntegrityIssues(plan);if(brickIssues.length)notesHtml+=`<div class=\"warn\" style=\"margin-bottom:10px\"><strong>Enchaînement(s) à vérifier :</strong> ${brickIssues.map(q=>esc(q.message)).join('<br>')}</div>`;
  const miss=[];
  if(plan.some(x=>needsProfile(x,'Natation'))&&!curCSS())miss.push('Renseigne ta vitesse max au 100 m dans le profil pour obtenir des allures cibles en natation.');
  if(plan.some(x=>needsProfile(x,'Course'))&&!curRunHM())miss.push('Renseigne ton allure cible du semi dans le profil pour obtenir des allures cibles en course à pied.');

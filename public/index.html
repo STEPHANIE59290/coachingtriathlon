@@ -358,7 +358,7 @@ window.addEventListener('unhandledrejection',ev=>logErr('promesse',ev.reason));
 const get=(k,d)=>{try{return JSON.parse(STORE.getItem('half04_'+k))??d}catch(e){return d}};
 const put=(k,v)=>{try{if(!TESTING&&k==='icuKey'){const had=!!get('icuKey',null),will=v!=null&&v!=='';if(had!==will)logErr('trace clé',(will?'enregistrée':'effacée')+' · mémoriser='+get('icuRemember','?')+' · '+String(new Error().stack).split('\n').slice(2,4).map(x=>x.trim().slice(0,60)).join(' < '));}}catch(_){}try{STORE.setItem('half04_'+k,JSON.stringify(v));try{sbDirty(k);}catch(_){}return true}catch(e){logErr('stockage',e);if(!storageWarned){storageWarned=true;notify('Le stockage local est indisponible (navigation privée ou accès bloqué) : tes données ne seront pas conservées. Pense à exporter.');}return false}};
 // ---- Versions : une mise à jour ne modifie jamais ton contenu ni ton historique ----
-const APP_VERSION='2.20.49',DATA_VERSION=1;
+const APP_VERSION='2.20.50',DATA_VERSION=1;
 const MIGRATIONS={ // n : fonction idempotente qui fait passer les données de la version n-1 à n (ex. 2:()=>{...})
 };
 (function migrateData(){
@@ -391,10 +391,11 @@ const sbMeta=()=>{try{return JSON.parse(localStorage.getItem('half04_sbMeta'))||
 const sbSetMeta=m=>{try{localStorage.setItem('half04_sbMeta',JSON.stringify(m));}catch(e){}};
 function sbSaveSess(x){if(x)localStorage.setItem('half04_sbSession',JSON.stringify(x));else localStorage.removeItem('half04_sbSession');sbSess=x;}
 const sbToSess=j=>({access_token:j.access_token,refresh_token:j.refresh_token,expires_at:Math.floor(Date.now()/1000)+(+j.expires_in||3600),uid:j.user&&j.user.id,email:j.user&&j.user.email});
+var sbSessLost=false;
 async function sbRefresh(){
  if(!sbSess||!sbSess.refresh_token)return false;
  try{const r=await fetch(SBC.url+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:sbH(),body:JSON.stringify({refresh_token:sbSess.refresh_token})});
-  if(!r.ok){let t='';try{t=(await r.clone().text()).slice(0,160);}catch(_){}logErr('session','rafraîchissement refusé : HTTP '+r.status+' '+t);return false;}sbSaveSess(sbToSess(await r.json()));return true;}catch(e){logErr('session',e);return false;}
+  if(!r.ok){let t='';try{t=(await r.clone().text()).slice(0,160);}catch(_){}logErr('session','rafraîchissement refusé : HTTP '+r.status+' '+t);if(/refresh_token|invalid_grant|session_not_found/i.test(t)&&!sbSessLost){sbSessLost=true;sbSaveSess(null);try{showAuth('login','Ta session a expiré : reconnecte-toi. Les données de cet appareil sont conservées.');}catch(_){}}return false;}sbSaveSess(sbToSess(await r.json()));return true;}catch(e){logErr('session',e);return false;}
 }
 async function sbFetch(path,opt,retry){
  opt=opt||{};
@@ -493,7 +494,7 @@ async function sbLogout(){
  if(!confirm('Te déconnecter ? Les données de cet appareil seront effacées (elles restent dans ton compte).'))return;
  await sbPush();
  if(sbMeta().dirty&&!confirm('Des modifications ne sont pas encore synchronisées (réseau absent ?). Les perdre et te déconnecter ?'))return;
- try{await sbFetch('/auth/v1/logout',{method:'POST'});}catch(e){}
+ try{await sbFetch('/auth/v1/logout?scope=local',{method:'POST'});}catch(e){}
  sbWipeLocal(true,true);location.reload();
 }
 async function sbDeleteAccount(){
@@ -520,7 +521,7 @@ async function sbLogin(){
  try{
   const r=await fetch(SBC.url+'/auth/v1/token?grant_type=password',{method:'POST',headers:sbH(),body:JSON.stringify({email,password:pw})});
   if(!r.ok){authMsg(r.status===400?'E-mail ou mot de passe incorrect.':'Connexion impossible ('+r.status+').');return;}
-  sbSaveSess(sbToSess(await r.json()));await bootAfterAuth();
+  sbSaveSess(sbToSess(await r.json()));sbSessLost=false;await bootAfterAuth();
  }catch(e){authMsg('Réseau indisponible : vérifie ta connexion.');}
 }
 async function sbForgot(){

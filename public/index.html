@@ -356,9 +356,9 @@ function logErr(ctx,e){try{const A=JSON.parse(localStorage.getItem('half04_errLo
 window.addEventListener('error',ev=>logErr('js',ev.error||ev.message));
 window.addEventListener('unhandledrejection',ev=>logErr('promesse',ev.reason));
 const get=(k,d)=>{try{return JSON.parse(STORE.getItem('half04_'+k))??d}catch(e){return d}};
-const put=(k,v)=>{try{STORE.setItem('half04_'+k,JSON.stringify(v));try{sbDirty(k);}catch(_){}return true}catch(e){logErr('stockage',e);if(!storageWarned){storageWarned=true;notify('Le stockage local est indisponible (navigation privée ou accès bloqué) : tes données ne seront pas conservées. Pense à exporter.');}return false}};
+const put=(k,v)=>{try{if(!TESTING&&k==='icuKey'){const had=!!get('icuKey',null),will=v!=null&&v!=='';if(had!==will)logErr('trace clé',(will?'enregistrée':'effacée')+' · mémoriser='+get('icuRemember','?')+' · '+String(new Error().stack).split('\n').slice(2,4).map(x=>x.trim().slice(0,60)).join(' < '));}}catch(_){}try{STORE.setItem('half04_'+k,JSON.stringify(v));try{sbDirty(k);}catch(_){}return true}catch(e){logErr('stockage',e);if(!storageWarned){storageWarned=true;notify('Le stockage local est indisponible (navigation privée ou accès bloqué) : tes données ne seront pas conservées. Pense à exporter.');}return false}};
 // ---- Versions : une mise à jour ne modifie jamais ton contenu ni ton historique ----
-const APP_VERSION='2.20.48',DATA_VERSION=1;
+const APP_VERSION='2.20.49',DATA_VERSION=1;
 const MIGRATIONS={ // n : fonction idempotente qui fait passer les données de la version n-1 à n (ex. 2:()=>{...})
 };
 (function migrateData(){
@@ -4139,6 +4139,7 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 window.addEventListener('online',()=>setTimeout(maybeSyncIcuOnReturn,1200));
 setInterval(checkUpdate,20*60*1000);
 boot();
+logErr('démarrage','v'+APP_VERSION+' · clé='+(get('icuKey',null)?'présente':'absente')+' · mémoriser='+get('icuRemember','?'));
 if(get('icuKey',null)&&get('icuAuto',true))setTimeout(()=>{syncIcuImports(true);},400);
 </script>
 

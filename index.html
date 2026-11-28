@@ -1624,14 +1624,14 @@ function generatePlan(){
   let bi=raceBrick?pool.findIndex(it=>it.quality&&!it.long&&okB(it)):-1; // phase spécifique : vélo à l'allure course puis course
   if(bi<0)bi=pool.findIndex(it=>!it.quality&&okB(it));
   if(bi<0){warns.push(`${days[d]} : aucune séance de vélo ne laisse assez de temps (20 min mini) ou de volume pour l’enchaînement.`);return;}
-  const bike=pool.splice(bi,1)[0];
+  const bike=pool.splice(bi,1)[0],brickGroupId=`brick-${iso(mondayOf(ws))}-${d}`;
   const runMin=Math.min(raceBrick?25:(ri&&ri.type==='Ironman'&&ri.key==='spec'?45:30),cs.max-bike.min,cap-planned-bike.min);
-  place(bike,d,cs);brickDays.add(d);
+  place({...bike,brickGroupId},d,cs);brickDays.add(d);
   if(raceBrick&&runMin>=15){
    // Course à l'allure semi après le vélo : 5 min très faciles puis le reste à l'allure course
-   place({sport:'Course',title:'Enchaînement vélo-course (allure semi)',min:runMin,desc:`5 min très faciles puis ${runMin-5} min à l’allure semi {ZR}, comme en course : jambes lourdes, foulée relâchée.`,intensity:'Modéré',zone:'',steps:[{name:'Transition',items:[{cue:'Très facile',min:5,z:'Z2'}]},{name:'Allure course',items:[{cue:'Allure semi',min:runMin-5,z:'ZR'}]}]},d);
+   place({sport:'Course',title:'Enchaînement vélo-course (allure semi)',min:runMin,trainingRole:'support',brickGroupId,desc:`5 min très faciles puis ${runMin-5} min à l’allure semi {ZR}, comme en course : jambes lourdes, foulée relâchée.`,intensity:'Modéré',zone:'',steps:[{name:'Transition',items:[{cue:'Très facile',min:5,z:'Z2'}]},{name:'Allure course',items:[{cue:'Allure semi',min:runMin-5,z:'ZR'}]}]},d);
   }else{
-   place({sport:'Course',title:'Enchaînement vélo-course',min:runMin,desc:'Transition après le vélo : départ très facile, foulée relâchée, rester en aisance respiratoire. Pas d’intensité.',intensity:'Facile',zone:'Z2',steps:[{name:'Enchaînement',items:[{cue:'Foulée relâchée',min:runMin,z:'Z2'}]}]},d);
+   place({sport:'Course',title:'Enchaînement vélo-course',min:runMin,trainingRole:'easy',brickGroupId,desc:'Transition après le vélo : départ très facile, foulée relâchée, rester en aisance respiratoire. Pas d’intensité.',intensity:'Facile',zone:'Z2',steps:[{name:'Enchaînement',items:[{cue:'Foulée relâchée',min:runMin,z:'Z2'}]}]},d);
   }
  });
 
@@ -2051,10 +2051,11 @@ function readinessState(){
 // Séance facile (zone 2) de la même discipline, durée en minutes
 function easyLike(x,min){
  min=Math.max(20,r5(min));
- if(x.sport==='Vélo')return copyTrainingMetadata(x,endur('Vélo','Vélo facile',min,5,5,'Z2','Facile')(1));
- if(x.sport==='Course')return copyTrainingMetadata(x,endur('Course','Footing facile',min,5,5,'Z2','Facile')(1));
- if(x.sport==='Natation')return copyTrainingMetadata(x,mkS('Natation','Natation facile',min,'Nage continue facile et technique en {Z2}, sans forcer','Facile',{zone:'Z2',steps:[{name:'Séance',items:[{cue:'Nage facile',sec:min*60,z:'Z2'}]}]}));
- return copyTrainingMetadata(x,mkS('Renforcement','Mobilité et gainage léger',Math.min(min,25),'Mobilité douce, respiration et stabilité','Très facile'));
+ const easy= x.sport==='Vélo'?copyTrainingMetadata(x,endur('Vélo','Vélo facile',min,5,5,'Z2','Facile')(1))
+  :x.sport==='Course'?copyTrainingMetadata(x,endur('Course','Footing facile',min,5,5,'Z2','Facile')(1))
+  :x.sport==='Natation'?copyTrainingMetadata(x,mkS('Natation','Natation facile',min,'Nage continue facile et technique en {Z2}, sans forcer','Facile',{zone:'Z2',steps:[{name:'Séance',items:[{cue:'Nage facile',sec:min*60,z:'Z2'}]}]}))
+  :copyTrainingMetadata(x,mkS('Renforcement','Mobilité et gainage léger',Math.min(min,25),'Mobilité douce, respiration et stabilité','Très facile'));
+ easy.trainingRole='easy';return easy;
 }
 // Séance proposée pour une séance prévue (d'origine), ou null si on la garde
 function proposeFor(x,st){

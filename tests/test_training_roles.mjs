@@ -116,10 +116,10 @@ test('easyLike convertit le rôle en easy et conserve le groupe de séance pour 
   }
 });
 
-test('easyLike normalise un ancien rôle absent sans le promouvoir', () => {
+test('easyLike classe une ancienne séance transformée en facile sans rôle initial comme easy', () => {
   const easyLike = easyLikeFunction();
   const adapted = easyLike({ sport: 'Course', title: 'Ancien plan' }, 45);
-  assert.equal(adapted.trainingRole, 'unclassified');
+  assert.equal(adapted.trainingRole, 'easy');
 });
 
 test('les scripts JavaScript intégrés à index.html sont syntaxiquement valides', () => {

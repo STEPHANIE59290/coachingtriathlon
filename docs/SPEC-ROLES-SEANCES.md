@@ -142,7 +142,7 @@ Ne pas construire une nouvelle page de paramétrage complexe. La revue du planni
 - Les données d'un athlète ne modifient jamais les rôles ou plans d'un autre.
 
 ### Non-régression
-- Les 18 tests unitaires actuels restent verts.
+- Les 39 tests unitaires actuels restent verts.
 - Les tests Playwright existants sont exécutés après intégration.
 - Le comportement actuel est comparé sur les cas non concernés.
 - GitHub Actions confirme les résultats sur la branche avant toute PR vers `main`.
@@ -180,26 +180,25 @@ La définition quantitative et détaillée des séances clés par phase reste vo
 - Une transformation `easyLike()` reclasse la séance transformée en `easy` et conserve son `brickGroupId` ; l'instantané `orig` garde le rôle initial pour l'annulation.
 - Les deux jambes d'un enchaînement généré partagent désormais un `brickGroupId` stable à l'échelle de la semaine ; la jambe course est `support` pour un enchaînement soutenu et `easy` pour une transition facile.
 - Les anciennes séances sans champ restent compatibles ; elles ne sont pas rétro-classées.
-- La suite GitHub Actions exécute les 18 tests du moteur existant et les nouveaux tests de rôles.
+- La suite GitHub Actions exécute 39 tests unitaires couvrant le moteur, les rôles et leur correction par l'athlète.
 
 ### Tests confirmés
 
-GitHub Actions : [run 46135479772](https://github.com/STEPHANIE59290/coachingtriathlon/actions/runs/46135479772)
+GitHub Actions : [run 46138623439](https://github.com/STEPHANIE59290/coachingtriathlon/actions/runs/46138623439)
 
-- 36 tests réussis.
+- 39 tests réussis.
 - 0 échec, 0 test ignoré.
 - Vérification syntaxique des scripts JavaScript intégrés à `index.html` incluse.
 
-### Non réalisé — à ne pas considérer comme livré
+### Points restants — non livrés
 
 - Le moteur hebdomadaire utilise `trainingRole` : les séances `support` sont sélectionnées en premier ; les séances `key` ne sont considérées qu'en signal global rouge et en l'absence de séance `support` admissible. Les séances `easy` et `unclassified` ne sont jamais sélectionnées automatiquement.
 - Les propositions quotidiennes suivent la même logique : en orange, seule une séance `support` est proposée à l'allègement ; en rouge, une séance `key` peut aussi être allégée. Les contraintes de temps disponible restent indépendantes du rôle.
 - Les garde-fous douleur ≥ 4/10, séances réalisées, événements et openers restent prioritaires.
 - L'interface du planning permet à chaque athlète de corriger le rôle de ses séances futures non réalisées (`Clé`, `Soutien`, `Facile`, `À classer`). La correction est enregistrée dans son propre `app_state` ; les politiques RLS existantes limitent les accès à sa propre ligne. Aucun rôle coach n'est introduit.
-- Les rappels courts de l'affûtage ne sont pas encore classés `key`.
-- Le moteur ne signale pas encore explicitement un enchaînement devenu incomplet si une seule jambe est modifiée ou retirée.
 - Les rappels courts de l'affûtage ne sont pas encore classés `key` : cette attribution demande une règle métier plus précise pour éviter de multiplier les séances prioritaires.
-- Les tests Playwright, l'intégration complète, la synchronisation multi-appareils et la revue d'isolation entre athlètes restent à faire.
+- Le moteur ne signale pas encore explicitement un enchaînement devenu incomplet si une seule jambe est modifiée ou retirée.
+- Les tests Playwright, l'intégration visuelle mobile/desktop, la synchronisation multi-appareils et la revue d'isolation entre athlètes restent à faire.
 - `public/index.html`, Supabase, Netlify, `main` et la production n'ont pas été modifiés.
 
 ## 12. Prochaines étapes contrôlées

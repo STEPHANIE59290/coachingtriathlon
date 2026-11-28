@@ -132,12 +132,14 @@ La matrice sera considérée comme validée lorsque :
 5. Le moteur peut expliquer pourquoi une séance est conservée, réduite, remplacée ou supprimée.
 6. Les tests couvrent les mêmes signaux pour Ironman et 70.3, puis vérifient les différences attendues de sélection des séances et de phases.
 
-## 10. Décision demandée
+## 10. Décision métier — validée
 
-Avant de toucher au code, valider ou corriger ces trois arbitrages :
+**Validation explicite de l'utilisateur : les trois arbitrages ci-dessous sont validés le 28 novembre 2026.** Cette validation autorise la préparation des scénarios de tests et de la spécification technique, mais pas encore la modification du moteur, de Supabase ou de la production.
+
+Arbitrages validés :
 
 - **Ironman :** priorité à la durabilité et à la spécificité vélo/enchaînement, sans protéger une séance longue au détriment de la santé.
 - **70.3 :** davantage de place possible au travail soutenu et à l'allure cible, sans augmenter automatiquement le nombre de séances intenses.
 - **Deux formats :** mêmes garde-fous de douleur, de fatigue et de données manquantes ; différenciation dans la structure du plan, la sélection des séances et l'affûtage, avec paramètres individualisés.
 
-Aucune modification du moteur ou de la production n'est autorisée par ce document.
+Aucune modification du moteur ou de la production n'est autorisée par ce document. Une évolution du code nécessitera une étape distincte de spécification, de tests, de revue et une autorisation explicite.

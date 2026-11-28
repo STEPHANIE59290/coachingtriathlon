@@ -2008,6 +2008,14 @@ function applyAdaptiveWeek(){
  put('plan',plan);put('adaptiveWeekApplied',{date:today,count:n,level:st.level,targets:targets||'global',why:st.why,roles:selected.map(c=>c.role)});renderPlan();refreshStats();renderToday();toast(`${n} séance(s) de soutien allégée(s)${targets?' dans '+targets.join(', '):''}. Les séances clés restent prioritaires. Tu peux annuler chaque adaptation depuis la séance.`);
 }
 function undoAdaptiveWeek(){let n=0;plan.forEach((x,i)=>{if(x&&x.adaptive7d&&x.orig){plan[i]=Object.assign({},x.orig,{day:x.day});n++;}});if(!n){toast('Aucune adaptation hebdomadaire à annuler.');return;}put('plan',plan);put('adaptiveWeekApplied',null);renderPlan();refreshStats();renderToday();toast(`${n} séance(s) restaurée(s).`);}
+// Tendance longitudinale sur 4 semaines : charge réellement réalisée, sans confondre absence de saisie et récupération.
+function adaptiveLongitudinalLoad(){
+ const now=new Date();now.setHours(12,0,0,0);const start=new Date(now);start.setDate(start.getDate()-27);
+ const F=get('feel',{}),weeks=Array.from({length:4},()=>({minutes:0,sRpe:0,sessions:0,rated:0,days:new Set()}));
+ workouts.forEach(w=>{if(!w||!w.date||w.date<iso(start)||w.date>iso(now))return;const duration=Math.max(0,+(w.duration||0));if(!duration)return;const age=Math.floor((new Date(iso(now)+'T12:00:00')-new Date(w.date+'T12:00:00'))/864e5),bucket=Math.min(3,Math.floor(age/7));if(bucket<0)return;const extra=Object.assign({},w.ext?(F[w.ext]||{}):{},w.postSession||{}),rpe=+(extra.rpe||w.rpe||0),week=weeks[3-bucket];week.minutes+=duration;week.sessions++;week.days.add(w.date);if(rpe>0){week.sRpe+=duration*rpe;week.rated++;}});
+ const recent=weeks[3],prior=weeks.slice(0,3),priorActive=prior.filter(w=>w.sessions>0).length,priorMinutes=prior.reduce((a,w)=>a+w.minutes,0)/3,priorSRpe=prior.reduce((a,w)=>a+w.sRpe,0)/3,priorRated=prior.reduce((a,w)=>a+w.rated,0),sufficient=recent.sessions>=2&&priorActive>=2;
+ return {weeks:weeks.map(w=>({minutes:w.minutes,sRpe:w.sRpe,sessions:w.sessions,rated:w.rated,days:w.days.size})),recentMinutes:recent.minutes,priorWeeklyMinutes:priorMinutes,recentSRpe:recent.sRpe,priorWeeklySRpe:priorSRpe,recentMinutesRatio:sufficient&&priorMinutes>0?recent.minutes/priorMinutes:null,recentSRpeRatio:sufficient&&recent.rated>=2&&priorRated>=4&&priorSRpe>0?recent.sRpe/priorSRpe:null,recentSessions:recent.sessions,priorActiveWeeks:priorActive,priorRated,sufficient};
+}
 // Prévision de charge sur les 7 prochains jours : indicateurs de vigilance, jamais un diagnostic.
 function adaptiveForecast(){
  const now=new Date();now.setHours(12,0,0,0);const today=iso(now),end=new Date(now);end.setDate(end.getDate()+7);
@@ -2023,7 +2031,9 @@ function adaptiveForecast(){
  try{phase=raceInfo(iso(mondayOf()));race=raceFor(iso(mondayOf()));if(race&&race.date)daysToRace=Math.round((new Date(race.date+'T12:00:00')-now)/864e5);}catch(e){}
  let fit=null,fitNow=null,fit14=null,ramp=null,formNow=null,form14=null;
  try{fit=buildFitSeries(42,end);if(fit&&fit.pts.length){const real=fit.pts.filter(x=>!x.proj),proj=fit.pts.filter(x=>x.proj);fitNow=real[real.length-1]||fit.pts[0];fit14=proj[proj.length-1]||fitNow;const at7=proj.find(x=>x.d>=iso(new Date(now.getTime()+7*864e5)))||fit14;ramp=at7.ctl-fitNow.ctl;formNow=fitNow.ctl-fitNow.atl;form14=fit14.ctl-fit14.atl;}}catch(e){}
- const ws=adaptiveWeekSignal(),flags=[],cautions=[];
+ const ws=adaptiveWeekSignal(),longitudinal=adaptiveLongitudinalLoad(),flags=[],cautions=[];
+ if(longitudinal.recentMinutesRatio!==null&&longitudinal.recentMinutesRatio>1.2)flags.push('volume réalisé sur les 7 derniers jours supérieur de plus de 20 % à la moyenne hebdomadaire des 3 semaines précédentes');
+ if(longitudinal.recentSRpeRatio!==null&&longitudinal.recentSRpeRatio>1.2)flags.push('charge interne estimée (durée × RPE) en hausse de plus de 20 % par rapport à la moyenne des 3 semaines précédentes');
  if(ws.painMax>=3)cautions.push('douleur signalée : la priorité est la zone douloureuse, pas la progression de charge');
  if(ws.level==='red'||ws.level==='amber')cautions.push('les signaux de récupération des 7 derniers jours justifient de la prudence');
  if(delta!==null&&delta>35&&futureMin>=180)flags.push(`volume planifié sur 7 jours en hausse d’environ ${Math.round(delta)} % par rapport aux 7 jours précédents`);
@@ -2041,7 +2051,7 @@ function adaptiveForecast(){
  if(level==='high')advice='Ne pas augmenter la charge. Vérifier les douleurs et la récupération ; envisager de réduire une séance exigeante après validation du bilan.';
  else if(level==='watch')advice='Garder les séances faciles réellement faciles, éviter les ajouts de volume et réévaluer dans 48 à 72 h.';
  if(phase&&phase.key==='taper'&&level!=='high')advice='Priorité à l’assimilation : respecter le volume réduit et conserver seulement les rappels d’intensité prévus.';
- return {level,flags,cautions,advice,confidence,dataCount,recentMin,futureMin,futureN,delta,ramp,formNow,form14,phase,race,daysToRace};
+ return {level,flags,cautions,advice,confidence,dataCount,recentMin,futureMin,futureN,delta,ramp,formNow,form14,phase,race,daysToRace,longitudinal};
 }
 function forecastHtml(){
  const f=adaptiveForecast(),color=f.level==='high'?'var(--red)':f.level==='watch'?'var(--orange)':'var(--green)',title=f.level==='high'?'Risque de surcharge à surveiller':f.level==='watch'?'Vigilance sur les 7 prochains jours':'Charge prévisionnelle cohérente';

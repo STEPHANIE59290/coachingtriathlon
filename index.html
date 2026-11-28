@@ -1743,6 +1743,14 @@ function trainingRoleControlHtml(i,x,done){
  return `<div style="display:flex;align-items:center;gap:7px;margin:7px 0 2px"><span class="muted" style="font-size:12px">${label}</span><select aria-label="Rôle de la séance" onchange="setTrainingRole(${i},this.value)" style="width:auto;min-width:132px;min-height:32px;padding:4px 8px;font-size:12px"><option value="key"${role==='key'?' selected':''}>Clé</option><option value="support"${role==='support'?' selected':''}>Soutien</option><option value="easy"${role==='easy'?' selected':''}>Facile</option><option value="unclassified"${role==='unclassified'?' selected':''}>À classer</option></select></div>`;
 }
 function dayLabel(i){const ps=get('planStart','');if(!ps)return '';const d=mondayOf(ps);d.setDate(d.getDate()+i);return d.toLocaleDateString('fr-FR',{day:'numeric',month:'short'});}
+// Vérifie la cohérence des enchaînements planifiés : un groupe doit contenir vélo + course.
+function brickIntegrityIssues(items){
+ const groups=new Map();
+ (Array.isArray(items)?items:[]).forEach((x,i)=>{if(!x||!x.brickGroupId)return;const id=String(x.brickGroupId);if(!groups.has(id))groups.set(id,[]);groups.get(id).push({x,i});});
+ const issues=[];
+ for(const [id,entries] of groups){const bike=entries.filter(e=>adaptiveSportKey(e.x.sport)==='Vélo'),run=entries.filter(e=>adaptiveSportKey(e.x.sport)==='Course');if(entries.length!==2||bike.length!==1||run.length!==1){const names=entries.map(e=>String(e.x.sport||'sport inconnu')).join(', ');issues.push({id,indices:entries.map(e=>e.i),message:'Enchaînement incomplet ou incohérent ('+names+') : vérifie les deux séances vélo-course.'});}}
+ return issues;
+}
 function renderPlan(){try{syncSpecialWeek();}catch(e){}
  renderIntervals();try{logPlanWeek();}catch(e){}try{renderTrainer();}catch(e){}{const sw=$('planSwitch');if(sw)sw.innerHTML=planSwitchHtml()+missedHtml();}
  const el=$('weeklyPlan'),home=$('homePlan');
@@ -1751,7 +1759,7 @@ function renderPlan(){try{syncSpecialWeek();}catch(e){}
  const stale=ps&&ps<iso(mondayOf())?`<div class="warn" style="margin-bottom:10px">Ce planning date de la semaine du ${esc(mondayOf(ps).toLocaleDateString('fr-FR',{day:'numeric',month:'long'}))}. Génère-en un nouveau pour la semaine en cours.</div>`:'';
  const notes=get('planNotes',[]);
  let notesHtml=Array.isArray(notes)&&notes.length?`<div class="warn" style="margin-bottom:10px">${notes.map(esc).join('<br>')}</div>`:'';
- notesHtml+=unplacedHtml();
+ notesHtml+=unplacedHtml();\n const brickIssues=brickIntegrityIssues(plan);if(brickIssues.length)notesHtml+=`<div class=\"warn\" style=\"margin-bottom:10px\"><strong>Enchaînement(s) à vérifier :</strong> ${brickIssues.map(q=>esc(q.message)).join('<br>')}</div>`;
  const miss=[];
  if(plan.some(x=>needsProfile(x,'Natation'))&&!curCSS())miss.push('Renseigne ta vitesse max au 100 m dans le profil pour obtenir des allures cibles en natation.');
  if(plan.some(x=>needsProfile(x,'Course'))&&!curRunHM())miss.push('Renseigne ton allure cible du semi dans le profil pour obtenir des allures cibles en course à pied.');

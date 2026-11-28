@@ -10,7 +10,7 @@ on:
     paths:
       - "index.html"
       - "tests/test_adaptive_engine.mjs"
-      - "tests/test_training_roles.mjs"
+      - "tests/test_training_roles.mjs"\n      - "tests/test_brick_integrity.mjs"
       - ".github/workflows/adaptive-tests.yml"
 
 permissions:
@@ -28,4 +28,4 @@ jobs:
         with:
           node-version: 20
       - name: Exécuter les tests
-        run: node --test tests/test_adaptive_engine.mjs tests/test_training_roles.mjs
+        run: node --test tests/test_adaptive_engine.mjs tests/test_training_roles.mjs tests/test_brick_integrity.mjs

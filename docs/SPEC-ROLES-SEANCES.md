@@ -184,15 +184,17 @@ La définition quantitative et détaillée des séances clés par phase reste vo
 
 ### Tests confirmés
 
-GitHub Actions : [run 46135055043](https://github.com/STEPHANIE59290/coachingtriathlon/actions/runs/46135055043)
+GitHub Actions : [run 46135479772](https://github.com/STEPHANIE59290/coachingtriathlon/actions/runs/46135479772)
 
-- 29 tests réussis.
+- 36 tests réussis.
 - 0 échec, 0 test ignoré.
 - Vérification syntaxique des scripts JavaScript intégrés à `index.html` incluse.
 
 ### Non réalisé — à ne pas considérer comme livré
 
-- Le moteur d'adaptation ne tient pas encore compte de `trainingRole` pour choisir les séances à réduire.
+- Le moteur hebdomadaire utilise `trainingRole` : les séances `support` sont sélectionnées en premier ; les séances `key` ne sont considérées qu'en signal global rouge et en l'absence de séance `support` admissible. Les séances `easy` et `unclassified` ne sont jamais sélectionnées automatiquement.
+- Les propositions quotidiennes suivent la même logique : en orange, seule une séance `support` est proposée à l'allègement ; en rouge, une séance `key` peut aussi être allégée. Les contraintes de temps disponible restent indépendantes du rôle.
+- Les garde-fous douleur ≥ 4/10, séances réalisées, événements et openers restent prioritaires.
 - L'interface ne permet pas encore de corriger le rôle. L'audit du code ne trouve pas de distinction d'autorisation entre coach et athlète : il ne faut donc pas afficher une commande de correction présentée comme « réservée au coach » tant que cette permission n'existe pas.
 - Les rappels courts de l'affûtage ne sont pas encore classés `key`.
 - Le moteur ne signale pas encore explicitement un enchaînement devenu incomplet si une seule jambe est modifiée ou retirée.
@@ -205,7 +207,7 @@ GitHub Actions : [run 46135055043](https://github.com/STEPHANIE59290/coachingtri
 1. Compléter et valider la table de décision des rôles pour toutes les phases et tous les focus, notamment l'affûtage et les semaines de récupération.
 2. Définir qui peut corriger un rôle : tous les athlètes sur leur propre plan, ou un coach avec une permission dédiée. L'application actuelle ne possède pas de rôle coach explicite ; ne pas exposer une commande coach à tous les comptes par défaut.
 3. Étendre les tests de génération et de persistance des plans.
-4. Seulement ensuite, faire évoluer le moteur pour utiliser les rôles, avec tests de non-régression et garde-fous inchangés.
+4. Le moteur utilise maintenant les rôles pour les adaptations quotidiennes et hebdomadaires ; poursuivre avec l'interface de correction et les tests d'intégration.
 5. Exécuter Playwright et les contrôles multi-athlètes ; proposer une PR vers `main` sans fusion ni mise en production sans autorisation explicite.
 
-**Périmètre actuel :** seuls `index.html`, les tests et la documentation de la branche `dev/tests-moteur-adaptation` ont été modifiés. Le moteur de décision d'adaptation, `public/index.html`, Supabase, Netlify, `main` et la production restent inchangés.
+**Périmètre actuel :** `index.html`, les tests et la documentation de la branche `dev/tests-moteur-adaptation` ont été modifiés. `public/index.html`, Supabase, Netlify, `main` et la production restent inchangés.

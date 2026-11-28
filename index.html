@@ -350,7 +350,7 @@ window.addEventListener('unhandledrejection',ev=>logErr('promesse',ev.reason));
 const get=(k,d)=>{try{return JSON.parse(STORE.getItem('half04_'+k))??d}catch(e){return d}};
 const put=(k,v)=>{try{STORE.setItem('half04_'+k,JSON.stringify(v));try{sbDirty(k);}catch(_){}return true}catch(e){logErr('stockage',e);if(!storageWarned){storageWarned=true;notify('Le stockage local est indisponible (navigation privée ou accès bloqué) : tes données ne seront pas conservées. Pense à exporter.');}return false}};
 // ---- Versions : une mise à jour ne modifie jamais ton contenu ni ton historique ----
-const APP_VERSION='2.20.43',DATA_VERSION=1;
+const APP_VERSION='2.20.44',DATA_VERSION=1;
 const MIGRATIONS={ // n : fonction idempotente qui fait passer les données de la version n-1 à n (ex. 2:()=>{...})
 };
 (function migrateData(){
@@ -2028,6 +2028,21 @@ function adaptiveLongitudinalAdvice(trend,phase,week){
  if(type==='Ironman')return 'Préparation Ironman : construire progressivement la durabilité, surtout à vélo, sans sacrifier la récupération ni augmenter plusieurs composantes à la fois.';
  if(type==='70.3')return 'Préparation 70.3 : développer progressivement la capacité à tenir l’allure cible, en gardant un équilibre entre travail soutenu et endurance facile.';
  return 'Tendance à interpréter avec le contexte individuel : conserver la structure actuelle et vérifier la récupération avant toute progression.';
+}
+// Synthèse du planning réellement exécuté : informative, sans rattrapage automatique.
+function trainingRealitySummary(planItems,doneItems){
+ const eligible=(planItems||[]).map((x,i)=>({x,i})).filter(({x})=>x&&!x.event&&!x.opener&&(+x.min||0)>0);
+ const rows=eligible.map(({x,i})=>{const w=(doneItems||[])[i]||null,planned=+x.min||0,actual=w?(+w.duration||+w.min||0):0;return {role:adaptiveRoleOf(x),planned,actual,done:!!w,shifted:!!(w&&w.shifted)};});
+ const total=rows.length,done=rows.filter(x=>x.done).length,key=rows.filter(x=>x.role==='key');
+ return {total,done,missed:total-done,adherence:total?done/total:null,plannedMinutes:rows.reduce((a,x)=>a+x.planned,0),actualMinutes:rows.reduce((a,x)=>a+x.actual,0),shortened:rows.filter(x=>x.done&&x.actual<x.planned*.8).length,extended:rows.filter(x=>x.done&&x.actual>x.planned*1.2).length,shifted:rows.filter(x=>x.shifted).length,keyPlanned:key.length,keyDone:key.filter(x=>x.done).length};
+}
+function raceSpecificFocus(type,key){
+ if(key==='taper'||key==='race')return 'Affûtage : conserver les rappels courts prévus, réduire la fatigue et ne pas compenser le volume.';
+ if(type==='Ironman'&&key==='spec')return 'Ironman spécifique : durabilité à vélo, enchaînements prévus et répétition de la stratégie nutritionnelle.';
+ if(type==='70.3'&&key==='spec')return '70.3 spécifique : travail soutenu maîtrisé, allure cible et enchaînements spécifiques déjà planifiés.';
+ if(type==='Ironman')return 'Ironman : développer progressivement l’endurance durable, surtout à vélo, tout en préservant la récupération.';
+ if(type==='70.3')return '70.3 : développer la capacité à tenir l’allure cible avec un équilibre entre travail soutenu et endurance facile.';
+ return 'Objectif à préciser : interpréter la préparation à partir des séances réellement effectuées et de la récupération.';
 }
 function adaptiveForecast(){
  const now=new Date();now.setHours(12,0,0,0);const today=iso(now),end=new Date(now);end.setDate(end.getDate()+7);

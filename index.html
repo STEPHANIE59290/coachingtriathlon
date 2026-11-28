@@ -2077,13 +2077,10 @@ function easyLike(x,min){
 function proposeFor(x,st){
  if(x.event||x.opener)return null;
  {const ia=injuryAlt(x);if(ia)return copyTrainingMetadata(x,ia);}
- const hard=!!(x.quality||x.long);let p=null;
- if(st.level==='red'){
-  if(x.sport==='Renforcement'){if(x.title!=='Mobilité et gainage léger')p=easyLike(x,25);}
-  else if(hard||x.min>45)p=easyLike(x,Math.min(x.min,45));
- }else if(st.level==='amber'){
-  if(hard)p=easyLike(x,Math.min(x.min,60));
- }
+ const role=adaptiveRoleOf(x);let p=null;
+ if(st.level==='red'&&(role==='support'||role==='key'))p=easyLike(x,Math.min(x.min,45));
+ else if(st.level==='amber'&&role==='support')p=easyLike(x,Math.min(x.min,60));
+ // La contrainte de temps disponible reste distincte du niveau de priorité sportive.
  if(st.t>=20&&x.sport!=='Renforcement'&&(p||x).min>st.t)p=easyLike(x,st.t);
  return p;
 }

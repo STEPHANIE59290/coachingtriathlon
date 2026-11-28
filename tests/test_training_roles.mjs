@@ -20,6 +20,7 @@ function helperContext() {
   const context = { Object, Array };
   vm.createContext(context);
   vm.runInContext(html.slice(start, end), context, { timeout: 1000 });
+  Object.assign(context, vm.runInContext('({ mkS, normalizeTrainingRole, tagTrainingCatalog, catalogTrainingRoles, copyTrainingMetadata })', context));
   return context;
 }
 

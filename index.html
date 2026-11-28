@@ -857,7 +857,8 @@ function painHistorySummary(entries,fromDate){
 function painHtml(inj){if(inj)return '';const since=iso(new Date(Date.now()-14*864e5)),items=painHistorySummary(get('painLog',[]),since),hit=items.find(x=>x.count>=3||x.max>=4);if(!hit)return '';
  const name=PREV[hit.zone]?PREV[hit.zone].n:hit.zone,mean=hit.average===null?'intensité non renseignée':'intensité moyenne '+hit.average.toFixed(1).replace('.',',')+'/10',sport=Object.keys(hit.sports).join(', ');
  const severity=hit.max>=4?' Une douleur ≥ 4/10 mérite de suspendre la sollicitation douloureuse et de demander un avis professionnel si elle persiste ou s’aggrave.':' La répétition justifie de réduire temporairement la contrainte et de surveiller son évolution.';
- return '<div class="warn" style="margin-bottom:12px"><strong>Douleur à suivre : '+esc(name)+'</strong> · '+hit.count+' signalement(s) en 14 jours · '+mean+(sport?' · '+esc(sport):'')+'.'+severity+'<div class="actions"><button class="primary" onclick="lightenZone(\''+hit.zone+'\')">Proposer un allègement de 7 jours</button></div><small class="muted">Ce suivi repère une répétition, il ne pose aucun diagnostic et ne remplace pas un professionnel de santé.</small></div>';
+ const action=Object.prototype.hasOwnProperty.call(PREV,hit.zone)?'<div class="actions"><button class="primary" onclick="lightenZone(\''+hit.zone+'\')">Proposer un allègement de 7 jours</button></div>':'';
+ return '<div class="warn" style="margin-bottom:12px"><strong>Douleur à suivre : '+esc(name)+'</strong> · '+hit.count+' signalement(s) en 14 jours · '+mean+(sport?' · '+esc(sport):'')+'.'+severity+action+'<small class="muted">Ce suivi repère une répétition, il ne pose aucun diagnostic et ne remplace pas un professionnel de santé.</small></div>';
 }
 function reportPain(){const z=$('prevZone')?$('prevZone').value:'general';if(z==='general'){notify('Choisis d’abord une zone sensible.');return;}const pain=$('prevPainSeverity')?+$('prevPainSeverity').value:0,sport=$('prevPainSport')?$('prevPainSport').value:'';const L=get('painLog',[]);L.push({d:iso(new Date()),z,pain,sport});while(L.length>100)L.shift();put('painLog',L);toast('Gêne enregistrée avec son intensité.');renderInjBanner();}
 // ---- Apparence ----
@@ -2061,8 +2062,8 @@ function adaptiveLongitudinalAdvice(trend,phase,week){
  return 'Tendance à interpréter avec le contexte individuel : conserver la structure actuelle et vérifier la récupération avant toute progression.';
 }
 // Synthèse du planning réellement exécuté : informative, sans rattrapage automatique.
-function trainingRealitySummary(planItems,doneItems){
- const eligible=(planItems||[]).map((x,i)=>({x,i})).filter(({x})=>x&&!x.event&&!x.opener&&(+x.min||0)>0);
+function trainingRealitySummary(planItems,doneItems,throughDate){
+ const eligible=(planItems||[]).map((x,i)=>({x,i})).filter(({x})=>x&&!x.event&&!x.opener&&(+x.min||0)>0&&(!throughDate||typeof planDayISO!=='function'||planDayISO(x.day)<=throughDate));
  const rows=eligible.map(({x,i})=>{const w=(doneItems||[])[i]||null,planned=+x.min||0,actual=w?(+w.duration||+w.min||0):0;return {role:adaptiveRoleOf(x),planned,actual,done:!!w,shifted:!!(w&&w.shifted)};});
  const total=rows.length,done=rows.filter(x=>x.done).length,key=rows.filter(x=>x.role==='key');
  return {total,done,missed:total-done,adherence:total?done/total:null,plannedMinutes:rows.reduce((a,x)=>a+x.planned,0),actualMinutes:rows.reduce((a,x)=>a+x.actual,0),shortened:rows.filter(x=>x.done&&x.actual<x.planned*.8).length,extended:rows.filter(x=>x.done&&x.actual>x.planned*1.2).length,shifted:rows.filter(x=>x.shifted).length,keyPlanned:key.length,keyDone:key.filter(x=>x.done).length};
@@ -2089,7 +2090,7 @@ function adaptiveForecast(){
  try{phase=raceInfo(iso(mondayOf()));race=raceFor(iso(mondayOf()));if(race&&race.date)daysToRace=Math.round((new Date(race.date+'T12:00:00')-now)/864e5);}catch(e){}
  let fit=null,fitNow=null,fit14=null,ramp=null,formNow=null,form14=null;
  try{fit=buildFitSeries(42,end);if(fit&&fit.pts.length){const real=fit.pts.filter(x=>!x.proj),proj=fit.pts.filter(x=>x.proj);fitNow=real[real.length-1]||fit.pts[0];fit14=proj[proj.length-1]||fitNow;const at7=proj.find(x=>x.d>=iso(new Date(now.getTime()+7*864e5)))||fit14;ramp=at7.ctl-fitNow.ctl;formNow=fitNow.ctl-fitNow.atl;form14=fit14.ctl-fit14.atl;}}catch(e){}
- const ws=adaptiveWeekSignal(),longitudinal=adaptiveLongitudinalLoad(),longitudinalAdvice=adaptiveLongitudinalAdvice(longitudinal,phase,ws),reality=trainingRealitySummary(plan,matchDone()),raceFocus=phase?raceSpecificFocus(phase.type,phase.key):'Ajoute une course cible pour activer une lecture spécifique à l’objectif.',flags=[],cautions=[];
+ const ws=adaptiveWeekSignal(),longitudinal=adaptiveLongitudinalLoad(),longitudinalAdvice=adaptiveLongitudinalAdvice(longitudinal,phase,ws),reality=trainingRealitySummary(plan,matchDone(),today),raceFocus=phase?raceSpecificFocus(phase.type,phase.key):'Ajoute une course cible pour activer une lecture spécifique à l’objectif.',flags=[],cautions=[];
  if(longitudinal.recentMinutesRatio!==null&&longitudinal.recentMinutesRatio>1.2)flags.push('volume réalisé sur les 7 derniers jours supérieur de plus de 20 % à la moyenne hebdomadaire des 3 semaines précédentes');
  if(longitudinal.recentSRpeRatio!==null&&longitudinal.recentSRpeRatio>1.2)flags.push('charge interne estimée (durée × RPE) en hausse de plus de 20 % par rapport à la moyenne des 3 semaines précédentes');
  if(ws.painMax>=3)cautions.push('douleur signalée : la priorité est la zone douloureuse, pas la progression de charge');

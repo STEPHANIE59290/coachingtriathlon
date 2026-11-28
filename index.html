@@ -1042,7 +1042,32 @@ function saveAvailability(silent){
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const r5=v=>Math.round(v/5)*5;
 const rot=(arr,n)=>arr[((n%arr.length)+arr.length)%arr.length];
-const mkS=(sport,title,min,desc,intensity,extra)=>({sport,title,min,desc,intensity,zone:'',...extra});
+const TRAINING_ROLES=Object.freeze(['key','support','easy','unclassified']);
+const normalizeTrainingRole=role=>TRAINING_ROLES.includes(role)?role:'unclassified';
+const tagTrainingFactory=(factory,role)=>f=>({...factory(f),trainingRole:normalizeTrainingRole(role)});
+const tagTrainingCatalog=(factories,roles)=>factories.map((factory,i)=>tagTrainingFactory(factory,roles[i]));
+function catalogTrainingRoles(focus,phase,recovery,weekInPhase,type,length){
+ const roles=Array(length).fill('support'),im=type==='Ironman'&&phase==='spec';
+ if(phase==='spec'&&!recovery){
+  if(focus==='balanced'){if(im)roles[3]='key';else roles[4]='key';}
+  else if(focus==='bike'){if(im)roles[2]='key';else roles[3]='key';}
+  else if(focus==='run'&&!im)roles[4]='key';
+ }
+ if(focus==='balanced'&&phase==='spec'&&!recovery)roles[5]='easy';
+ else if(focus==='balanced'&&phase==='taper'&&weekInPhase===2)roles[5]='easy';
+ else if(focus==='balanced'&&phase!=='taper')roles[5]='easy';
+ else if(focus==='bike')roles[5]='easy';
+ else if(focus==='run')roles[2]='easy';
+ else if(focus==='swim')roles[5]='easy';
+ return roles;
+}
+const copyTrainingMetadata=(source,target)=>{
+ const out={...target};
+ if(source&&source.trainingRole!==undefined)out.trainingRole=normalizeTrainingRole(source.trainingRole);
+ if(source&&source.brickGroupId!==undefined)out.brickGroupId=source.brickGroupId;
+ return out;
+};
+const mkS=(sport,title,min,desc,intensity,extra)=>({sport,title,min,desc,intensity,zone:'',trainingRole:'unclassified',...extra,trainingRole:normalizeTrainingRole(extra&&extra.trainingRole)});
 // Endurance : la durée suit la charge ; l'échauffement et le retour au calme restent fixes.
 // Chaque séance porte aussi ses « steps » (structure détaillée) pour l'export intervals.icu.
 const endur=(sport,title,base,warm,cool,code,intensity,o={})=>f=>{
@@ -1154,11 +1179,11 @@ const runOpen=()=>mkS('Course','Footing de rappel',21,'10 min faciles · 4 × 30
 
 function buildCatalog(focus,n,rec,ctx){
  ctx=ctx||{};const ph=ctx.phase||null,tests=new Set(ctx.tests||[]);
- if(focus==='recovery')return[
+ if(focus==='recovery')return tagTrainingCatalog([
   ()=>mkS('Natation','Natation récupération',30,'Nage très facile et technique','Très facile',{zone:'Z1',steps:[{name:'Séance',items:[{cue:'Nage très facile',sec:1800,z:'Z1'}]}]}),
   ()=>mkS('Vélo','Vélo souple',45,'Pédalage fluide, faible résistance','Très facile',{zone:'Z1',steps:[{name:'Séance',items:[{cue:'Pédalage fluide',min:45,z:'Z1'}]}]}),
-  ()=>mkS('Renforcement','Mobilité et gainage léger',25,'Mobilité douce, respiration et stabilité','Très facile')];
- if(ph==='race')return[swimOpen,bikeOpen,runOpen,endur('Course','Footing facile',40,10,5,'Z2','Facile')];
+  ()=>mkS('Renforcement','Mobilité et gainage léger',25,'Mobilité douce, respiration et stabilité','Très facile')],['easy','easy','easy']);
+ if(ph==='race')return tagTrainingCatalog([swimOpen,bikeOpen,runOpen,endur('Course','Footing facile',40,10,5,'Z2','Facile')],['easy','easy','easy','easy']);
  const swimTech=()=>swimTechBuild();
  const strength=()=>strengthBuild(ph);
  const bikeEnd=endur('Vélo','Vélo endurance',60,10,10,'Z2','Z2');
@@ -1192,7 +1217,10 @@ function buildCatalog(focus,n,rec,ctx){
   swim:[swimTech,sq(0),sq(1),swimEnd,bikeEnd,runEasy,strength]
  };
  const L=lists[focus]||lists.balanced;
- return (tests.has('ftp')&&L.includes(T_FTP))?L.concat([T_CP5]):L;
+ // Attribution explicite selon la structure de la liste, jamais selon le titre ou la durée.
+ const roles=catalogTrainingRoles(focus,ph,rec,ctx.wr,ctx.type,L.length);
+ const tagged=tagTrainingCatalog(L,roles);
+ return (tests.has('ftp')&&L.includes(T_FTP))?tagged.concat([tagTrainingFactory(T_CP5,'support')]):tagged;
 }
 
 // ---- Progression de la charge ----
@@ -1587,7 +1615,7 @@ function generatePlan(){
  let planned=0;
  const brickDays=new Set();
  const fits=(it,d)=>avail[d]-dayUsed[d]>=it.min&&dSp[d].includes(it.sport)&&!(it.sport==='Course'&&brickDays.has(d))&&daySlots[d].some(sl=>!sl.used&&sl.sports.includes(it.sport)&&sl.max>=it.min); // le jour d'un enchaînement, la course est celle de l'enchaînement
- const place=(it,d,sl)=>{const {mk,...rest}=it;result.push({...rest,day:d});dayUsed[d]+=it.min;planned+=it.min;if(!sl&&!(it.sport==='Course'&&brickDays.has(d)))sl=daySlots[d].filter(q=>!q.used&&q.sports.includes(it.sport)&&q.max>=it.min).sort((a,b)=>a.max-b.max)[0];if(sl){sl.used=true;if(sl.indoor&&it.sport==='Vélo')result[result.length-1].indoor=true;}};
+ const place=(it,d,sl)=>{const {mk,...rest}=it;result.push({...rest,trainingRole:normalizeTrainingRole(rest.trainingRole),day:d});dayUsed[d]+=it.min;planned+=it.min;if(!sl&&!(it.sport==='Course'&&brickDays.has(d)))sl=daySlots[d].filter(q=>!q.used&&q.sports.includes(it.sport)&&q.max>=it.min).sort((a,b)=>a.max-b.max)[0];if(sl){sl.used=true;if(sl.indoor&&it.sport==='Vélo')result[result.length-1].indoor=true;}};
 
  // 1) Jours « brick » : un vélo d'endurance d'abord, puis la course enchaînée (le vélo passe toujours avant la course)
  days.forEach((_,d)=>{
@@ -1596,14 +1624,14 @@ function generatePlan(){
   let bi=raceBrick?pool.findIndex(it=>it.quality&&!it.long&&okB(it)):-1; // phase spécifique : vélo à l'allure course puis course
   if(bi<0)bi=pool.findIndex(it=>!it.quality&&okB(it));
   if(bi<0){warns.push(`${days[d]} : aucune séance de vélo ne laisse assez de temps (20 min mini) ou de volume pour l’enchaînement.`);return;}
-  const bike=pool.splice(bi,1)[0];
+  const bike=pool.splice(bi,1)[0],brickGroupId=`brick-${iso(mondayOf(ws))}-${d}`;
   const runMin=Math.min(raceBrick?25:(ri&&ri.type==='Ironman'&&ri.key==='spec'?45:30),cs.max-bike.min,cap-planned-bike.min);
-  place(bike,d,cs);brickDays.add(d);
+  place({...bike,brickGroupId},d,cs);brickDays.add(d);
   if(raceBrick&&runMin>=15){
    // Course à l'allure semi après le vélo : 5 min très faciles puis le reste à l'allure course
-   place({sport:'Course',title:'Enchaînement vélo-course (allure semi)',min:runMin,desc:`5 min très faciles puis ${runMin-5} min à l’allure semi {ZR}, comme en course : jambes lourdes, foulée relâchée.`,intensity:'Modéré',zone:'',steps:[{name:'Transition',items:[{cue:'Très facile',min:5,z:'Z2'}]},{name:'Allure course',items:[{cue:'Allure semi',min:runMin-5,z:'ZR'}]}]},d);
+   place({sport:'Course',title:'Enchaînement vélo-course (allure semi)',min:runMin,trainingRole:'support',brickGroupId,desc:`5 min très faciles puis ${runMin-5} min à l’allure semi {ZR}, comme en course : jambes lourdes, foulée relâchée.`,intensity:'Modéré',zone:'',steps:[{name:'Transition',items:[{cue:'Très facile',min:5,z:'Z2'}]},{name:'Allure course',items:[{cue:'Allure semi',min:runMin-5,z:'ZR'}]}]},d);
   }else{
-   place({sport:'Course',title:'Enchaînement vélo-course',min:runMin,desc:'Transition après le vélo : départ très facile, foulée relâchée, rester en aisance respiratoire. Pas d’intensité.',intensity:'Facile',zone:'Z2',steps:[{name:'Enchaînement',items:[{cue:'Foulée relâchée',min:runMin,z:'Z2'}]}]},d);
+   place({sport:'Course',title:'Enchaînement vélo-course',min:runMin,trainingRole:'easy',brickGroupId,desc:'Transition après le vélo : départ très facile, foulée relâchée, rester en aisance respiratoire. Pas d’intensité.',intensity:'Facile',zone:'Z2',steps:[{name:'Enchaînement',items:[{cue:'Foulée relâchée',min:runMin,z:'Z2'}]}]},d);
   }
  });
 
@@ -1707,6 +1735,13 @@ function missedHtml(){try{
 function missedMove(i,d){if(!plan[i])return;plan[i]=Object.assign({},plan[i],{day:d,moved:true});put('plan',plan);renderPlan();renderToday();refreshStats();}
 function missedDrop(i){const x=plan[i];if(!x)return;const ps=get('planStart',''),base=x.orig||x,k=get('skipped',null);
  put('skipped',{week:ps,min:(k&&k.week===ps?(+k.min||0):0)+base.min});plan.splice(i,1);put('plan',plan);renderPlan();renderToday();refreshStats();}
+function trainingRoleControlHtml(i,x,done){
+ if(!x||x.event||x.opener||done)return '';
+ const source=x.orig&&typeof x.orig==='object'?x.orig:x;
+ const role=normalizeTrainingRole(source.trainingRole);
+ const label=x.orig?'Rôle initial':'Rôle';
+ return `<div style="display:flex;align-items:center;gap:7px;margin:7px 0 2px"><span class="muted" style="font-size:12px">${label}</span><select aria-label="Rôle de la séance" onchange="setTrainingRole(${i},this.value)" style="width:auto;min-width:132px;min-height:32px;padding:4px 8px;font-size:12px"><option value="key"${role==='key'?' selected':''}>Clé</option><option value="support"${role==='support'?' selected':''}>Soutien</option><option value="easy"${role==='easy'?' selected':''}>Facile</option><option value="unclassified"${role==='unclassified'?' selected':''}>À classer</option></select></div>`;
+}
 function dayLabel(i){const ps=get('planStart','');if(!ps)return '';const d=mondayOf(ps);d.setDate(d.getDate()+i);return d.toLocaleDateString('fr-FR',{day:'numeric',month:'short'});}
 function renderPlan(){try{syncSpecialWeek();}catch(e){}
  renderIntervals();try{logPlanWeek();}catch(e){}try{renderTrainer();}catch(e){}{const sw=$('planSwitch');if(sw)sw.innerHTML=planSwitchHtml()+missedHtml();}
@@ -1725,7 +1760,7 @@ function renderPlan(){try{syncSpecialWeek();}catch(e){}
  const doneHtml=nDone?`<div class="hint" style="margin-bottom:10px">Réalisé : <strong>${nDone}/${plan.length}</strong> séances, ${doneMin} min sur ${plan.reduce((a,x)=>a+x.min,0)} min prévues.</div>`:'';
  el.innerHTML=stale+phaseBannerHtml()+notesHtml+missHtml+doneHtml+days.map((d,i)=>{
   const p=plan.filter(x=>x.day===i),dl=dayLabel(i);
-  return `<div style="margin:8px 0"><strong>${d}</strong>${dl?` <span class="muted">· ${esc(dl)}</span>`:''}${p.length?p.map(x=>`<div class="session"><span class="pill">${esc(x.sport)}</span>${x.indoor?'<span class="pill">Home trainer</span>':''}<strong>${esc(x.title)}${x.event?'':' · '+x.min+' min'}</strong>${zoneTarget(x.sport,x.zone,x.indoor)?`<p class="muted" style="margin:2px 0 0">Cible : ${esc(zoneTarget(x.sport,x.zone,x.indoor))}</p>`:''}<p>${esc(fillZones(x.sport,x.desc,x.indoor))}</p>${fuelHtml(x)}<small>Intensité : ${esc(x.intensity)} · Séance indicative${x.adapted?' · <strong style="color:var(--orange)">adaptée à ton bilan</strong>':''}</small>${doneMap[plan.indexOf(x)]?`<p style="margin:6px 0 0;color:var(--green);font-weight:600">✔ Réalisée : ${doneMap[plan.indexOf(x)].duration} min (prévu ${x.min})${doneMap[plan.indexOf(x)].shifted?' · un autre jour':''}${doneExtra(doneMap[plan.indexOf(x)])}</p>`:''}${anaHtml(plan.indexOf(x),x,doneMap[plan.indexOf(x)])}${(x.event||x.opener||doneMap[plan.indexOf(x)])?'':`<div class="actions" style="margin-top:6px"><button class="secondary" onclick="skipSession(${plan.indexOf(x)})">Je n’ai pas pu</button></div>`}</div>`).join(''):'<p class="muted">Repos / récupération</p>'}</div>`;
+  return `<div style="margin:8px 0"><strong>${d}</strong>${dl?` <span class="muted">· ${esc(dl)}</span>`:''}${p.length?p.map(x=>`<div class="session"><span class="pill">${esc(x.sport)}</span>${x.indoor?'<span class="pill">Home trainer</span>':''}<strong>${esc(x.title)}${x.event?'':' · '+x.min+' min'}</strong>${trainingRoleControlHtml(plan.indexOf(x),x,doneMap[plan.indexOf(x)])}${zoneTarget(x.sport,x.zone,x.indoor)?`<p class="muted" style="margin:2px 0 0">Cible : ${esc(zoneTarget(x.sport,x.zone,x.indoor))}</p>`:''}<p>${esc(fillZones(x.sport,x.desc,x.indoor))}</p>${fuelHtml(x)}<small>Intensité : ${esc(x.intensity)} · Séance indicative${x.adapted?' · <strong style="color:var(--orange)">adaptée à ton bilan</strong>':''}</small>${doneMap[plan.indexOf(x)]?`<p style="margin:6px 0 0;color:var(--green);font-weight:600">✔ Réalisée : ${doneMap[plan.indexOf(x)].duration} min (prévu ${x.min})${doneMap[plan.indexOf(x)].shifted?' · un autre jour':''}${doneExtra(doneMap[plan.indexOf(x)])}</p>`:''}${anaHtml(plan.indexOf(x),x,doneMap[plan.indexOf(x)])}${(x.event||x.opener||doneMap[plan.indexOf(x)])?'':`<div class="actions" style="margin-top:6px"><button class="secondary" onclick="skipSession(${plan.indexOf(x)})">Je n’ai pas pu</button></div>`}</div>`).join(''):'<p class="muted">Repos / récupération</p>'}</div>`;
  }).join('');
  {const cur=iso(mondayOf()),other=!!ps&&ps!==cur,t=$('homePlanTitle');
  if(t)t.textContent=other?'Semaine du '+mondayOf(ps).toLocaleDateString('fr-FR',{day:'numeric',month:'long'})+(ps>cur?' (à venir)':' (passée)'):'Cette semaine';
@@ -1923,21 +1958,46 @@ function adaptiveWeekSignal(){
  if(level==='green'&&!rated.length&&!rows.some(x=>x.pain>0)&&!Object.keys(RL).some(k=>k>=from&&k<=to))why.push('peu de retours de récupération : analyse prudente, données insuffisantes');
  return {level,why,rows,sports,response,localTargets,redDays,amberDays,painMax,painDays,hardCount,avgRpe,planned,completed,adherence,plannedMin,doneMin,ratio,from,to};
 }
+function adaptiveRoleOf(session){
+ const role=String(session&&session.trainingRole||'').toLowerCase();
+ return ['key','support','easy'].includes(role)?role:'unclassified';
+}
+function setTrainingRole(i,role){
+ if(!['key','support','easy','unclassified'].includes(role)){toast('Rôle de séance invalide.');return;}
+ const x=plan[i];if(!x||x.event||x.opener)return;
+ // Si la séance est temporairement adaptée, corriger son rôle d'origine
+ // afin que l'annulation conserve la correction sans annuler l'adaptation.
+ if(x.orig&&typeof x.orig==='object')x.orig.trainingRole=role;
+ else x.trainingRole=role;
+ put('plan',plan);renderPlan();toast('Rôle de séance enregistré.');
+}
 function applyAdaptiveWeek(){
  const st=adaptiveWeekSignal();if(st.painMax>=4){toast('Douleur ≥ 4/10 : pas d’adaptation automatique. Évalue la douleur et demande un avis médical si elle est importante ou persistante.');return;}
  const global=['red','amber'].includes(st.level),targets=global?null:st.localTargets.map(x=>x.name);
  if(!global&&!targets.length){toast('Aucun signal de fatigue par discipline ou global ne justifie un allègement. Ne cherche pas à rattraper les séances manquées.');return;}
- const today=iso(new Date()),end=new Date();end.setDate(end.getDate()+7);const endISO=iso(end),dm=matchDone();let n=0;
+ const today=iso(new Date()),end=new Date();end.setDate(end.getDate()+7);const endISO=iso(end),dm=matchDone(),candidates=[];
  plan.forEach((x,i)=>{
-  const d=planDayISO(x.day);if(d<today||d>endISO||x.event||x.opener||dm[i]||x.adaptive7d||x.adapted&&x.orig)return;
+  if(!x)return;const d=planDayISO(x.day);if(d<today||d>endISO||x.event||x.opener||dm[i]||x.adaptive7d||x.adapted&&x.orig)return;
   if(targets&&!targets.includes(adaptiveSportKey(x.sport)))return;
-  const hard=!!(x.quality||x.long||x.min>60);if(!hard||x.sport==='Renforcement'&&x.title==='Mobilité et gainage léger')return;
+  const role=adaptiveRoleOf(x);if(role!=='support'&&role!=='key')return;
+  if(x.sport==='Renforcement'&&x.title==='Mobilité et gainage léger')return;
+  candidates.push({x,i,role});
+ });
+ const supports=candidates.filter(c=>c.role==='support');
+ // Les séances clés ne sont envisagées qu'en signal rouge, si aucune séance
+ // de soutien admissible ne reste. Les séances non classées ne sont jamais devinées.
+ const selected=supports.length?supports:(st.level==='red'?candidates.filter(c=>c.role==='key'):[]);
+ if(!selected.length){
+  toast('Aucune séance de soutien admissible à alléger. Les séances clés, faciles et non classées sont conservées ; vérifie le planning avec le coach.');
+  return;
+ }
+ let n=0;
+ selected.forEach(({x,i})=>{
   const local=targets?st.sports[adaptiveSportKey(x.sport)]:null,factor=global?(st.level==='red'?.55:.7):(local&&local.level==='blocked'?.55:.7);
   const min=Math.max(25,Math.round((x.min||40)*factor/5)*5),q=easyLike(x,min),orig=Object.assign({},x);delete orig.orig;
   plan[i]=Object.assign({},q,{day:x.day,adapted:true,adaptive7d:true,orig,indoor:x.sport==='Vélo'?!!x.indoor:undefined});n++;
  });
- if(!n){toast(targets?`Aucune séance longue ou intense à adapter dans les disciplines concernées (${targets.join(', ')}).`:'Aucune séance future longue ou intense à adapter dans les 7 prochains jours.');return;}
- put('plan',plan);put('adaptiveWeekApplied',{date:today,count:n,level:st.level,targets:targets||'global',why:st.why});renderPlan();refreshStats();renderToday();toast(`${n} séance(s) allégée(s)${targets?' dans '+targets.join(', '):''}. Tu peux annuler chaque adaptation depuis la séance.`);
+ put('plan',plan);put('adaptiveWeekApplied',{date:today,count:n,level:st.level,targets:targets||'global',why:st.why,roles:selected.map(c=>c.role)});renderPlan();refreshStats();renderToday();toast(`${n} séance(s) de soutien allégée(s)${targets?' dans '+targets.join(', '):''}. Les séances clés restent prioritaires. Tu peux annuler chaque adaptation depuis la séance.`);
 }
 function undoAdaptiveWeek(){let n=0;plan.forEach((x,i)=>{if(x&&x.adaptive7d&&x.orig){plan[i]=Object.assign({},x.orig,{day:x.day});n++;}});if(!n){toast('Aucune adaptation hebdomadaire à annuler.');return;}put('plan',plan);put('adaptiveWeekApplied',null);renderPlan();refreshStats();renderToday();toast(`${n} séance(s) restaurée(s).`);}
 // Prévision de charge sur les 7 prochains jours : indicateurs de vigilance, jamais un diagnostic.
@@ -2023,22 +2083,20 @@ function readinessState(){
 // Séance facile (zone 2) de la même discipline, durée en minutes
 function easyLike(x,min){
  min=Math.max(20,r5(min));
- if(x.sport==='Vélo')return endur('Vélo','Vélo facile',min,5,5,'Z2','Facile')(1);
- if(x.sport==='Course')return endur('Course','Footing facile',min,5,5,'Z2','Facile')(1);
- if(x.sport==='Natation')return mkS('Natation','Natation facile',min,'Nage continue facile et technique en {Z2}, sans forcer','Facile',{zone:'Z2',steps:[{name:'Séance',items:[{cue:'Nage facile',sec:min*60,z:'Z2'}]}]});
- return mkS('Renforcement','Mobilité et gainage léger',Math.min(min,25),'Mobilité douce, respiration et stabilité','Très facile');
+ const easy= x.sport==='Vélo'?copyTrainingMetadata(x,endur('Vélo','Vélo facile',min,5,5,'Z2','Facile')(1))
+  :x.sport==='Course'?copyTrainingMetadata(x,endur('Course','Footing facile',min,5,5,'Z2','Facile')(1))
+  :x.sport==='Natation'?copyTrainingMetadata(x,mkS('Natation','Natation facile',min,'Nage continue facile et technique en {Z2}, sans forcer','Facile',{zone:'Z2',steps:[{name:'Séance',items:[{cue:'Nage facile',sec:min*60,z:'Z2'}]}]}))
+  :copyTrainingMetadata(x,mkS('Renforcement','Mobilité et gainage léger',Math.min(min,25),'Mobilité douce, respiration et stabilité','Très facile'));
+ easy.trainingRole='easy';return easy;
 }
 // Séance proposée pour une séance prévue (d'origine), ou null si on la garde
 function proposeFor(x,st){
  if(x.event||x.opener)return null;
- {const ia=injuryAlt(x);if(ia)return ia;}
- const hard=!!(x.quality||x.long);let p=null;
- if(st.level==='red'){
-  if(x.sport==='Renforcement'){if(x.title!=='Mobilité et gainage léger')p=easyLike(x,25);}
-  else if(hard||x.min>45)p=easyLike(x,Math.min(x.min,45));
- }else if(st.level==='amber'){
-  if(hard)p=easyLike(x,Math.min(x.min,60));
- }
+ {const ia=injuryAlt(x);if(ia)return copyTrainingMetadata(x,ia);}
+ const role=adaptiveRoleOf(x);let p=null;
+ if(st.level==='red'&&(role==='support'||role==='key'))p=easyLike(x,Math.min(x.min,45));
+ else if(st.level==='amber'&&role==='support')p=easyLike(x,Math.min(x.min,60));
+ // La contrainte de temps disponible reste distincte du niveau de priorité sportive.
  if(st.t>=20&&x.sport!=='Renforcement'&&(p||x).min>st.t)p=easyLike(x,st.t);
  return p;
 }
@@ -2199,7 +2257,7 @@ function freeAddPlan(r,d,t,extId){
  const di=Math.round((new Date(d+'T12:00:00')-mondayOf(ps))/864e5);
  if(di<0||di>6)return 'Hors de la semaine affichée : non ajoutée à « Ma semaine ».';
  const sport=$('freeSport').value;
- const it={sport,title:$('freeTitle').value.trim()||'Séance libre',min:r.est||r.total||60,desc:r.secs?freeDesc(r.secs,sport):r.text,intensity:'Libre',zone:'',day:di,free:true,extId,time:t};
+ const it={sport,title:$('freeTitle').value.trim()||'Séance libre',min:r.est||r.total||60,desc:r.secs?freeDesc(r.secs,sport):r.text,intensity:'Libre',zone:'',trainingRole:'unclassified',day:di,free:true,extId,time:t};
  if(r.secs&&sport!=='Renforcement')it.steps=r.secs;
  plan.push(it);put('plan',plan);renderPlan();refreshStats();
  return 'Ajoutée à « Ma semaine » ('+days[di].toLowerCase()+').';

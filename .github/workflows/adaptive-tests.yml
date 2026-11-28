@@ -1,0 +1,31 @@
+name: Tests du moteur d'adaptation
+
+on:
+  push:
+    branches:
+      - dev/tests-moteur-adaptation
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "index.html"
+      - "tests/test_adaptive_engine.mjs"
+      - "tests/test_training_roles.mjs"
+      - ".github/workflows/adaptive-tests.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  adaptive-engine:
+    name: Tests unitaires — moteur d'adaptation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupérer le dépôt
+        uses: actions/checkout@v4
+      - name: Installer Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Exécuter les tests
+        run: node --test tests/test_adaptive_engine.mjs tests/test_training_roles.mjs
